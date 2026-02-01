@@ -7,6 +7,8 @@ import { findUserById, findLeaveRequests, countLeaveRequests } from '@/lib/db-he
 import DashboardStats from '@/components/DashboardStats'
 import RecentLeaves from '@/components/RecentLeaves'
 import LeaveBalanceCard from '@/components/LeaveBalanceCard'
+import AttendanceCheckInOut from '@/components/AttendanceCheckInOut'
+import AttendanceSummaryCard from '@/components/AttendanceSummaryCard'
 
 export default async function EmployeeDashboardPage() {
   const session = await getServerSession(authOptions)
@@ -39,7 +41,7 @@ export default async function EmployeeDashboardPage() {
     <Layout>
       <div className="space-y-6">
         {/* Welcome Header - Reduced size */}
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-xl p-6 text-white shadow-lg">
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-xl p-6 text-white shadow-lg mb-2">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold mb-1">Welcome back, {session.user.name}!</h1>
@@ -49,15 +51,23 @@ export default async function EmployeeDashboardPage() {
         </div>
 
         {/* Stats Cards */}
-        <DashboardStats stats={stats} teamStats={null} role={session.user.role} />
+        <div className="mb-2">
+          <DashboardStats stats={stats} teamStats={null} role={session.user.role} />
+        </div>
+
+        {/* Attendance Check-In/Out */}
+        <div className="mb-2">
+          <AttendanceCheckInOut />
+        </div>
 
         {/* Main Content Grid - Reduced size */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
             <RecentLeaves leaves={recentLeaves} />
+            <AttendanceSummaryCard />
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             <LeaveBalanceCard balances={leaveBalances} />
             
             {/* Quick Actions - Reduced size */}
@@ -69,6 +79,12 @@ export default async function EmployeeDashboardPage() {
                   className="block w-full btn-primary text-center py-2 text-sm"
                 >
                   Apply for Leave
+                </a>
+                <a
+                  href="/employee/attendance"
+                  className="block w-full btn-secondary text-center py-2 text-sm"
+                >
+                  View Attendance
                 </a>
                 <a
                   href="/profile"

@@ -27,14 +27,14 @@ interface Leave {
 export default function ApprovalsTable({ 
   pendingLeaves, 
   allLeaves,
-  userRole = 'MANAGER'
+  userRole = 'HOD'
 }: { 
   pendingLeaves: Leave[]
   allLeaves: Leave[]
   userRole?: string
 }) {
   const [processing, setProcessing] = useState<string | null>(null)
-  const canApprove = userRole === 'MANAGER' // Only managers can approve
+  const canApprove = userRole === 'HOD' || userRole === 'ADMIN' // HOD approves employees, Admin approves HOD
 
   const handleApproval = async (leaveId: string, action: 'approve' | 'reject', reason?: string) => {
     setProcessing(leaveId)

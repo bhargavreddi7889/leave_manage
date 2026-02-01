@@ -29,7 +29,7 @@ export function formatDateTime(date: Date | string): string {
 export function hasPermission(userRole: UserRole, requiredRole: UserRole): boolean {
   const roleHierarchy: Record<UserRole, number> = {
     EMPLOYEE: 1,
-    MANAGER: 2,
+    HOD: 2,
     ADMIN: 3,
   }
   
@@ -38,7 +38,7 @@ export function hasPermission(userRole: UserRole, requiredRole: UserRole): boole
 
 export function canAccess(userRole: UserRole, targetRole: UserRole): boolean {
   if (userRole === 'ADMIN') return true
-  if (userRole === 'MANAGER' && targetRole === 'EMPLOYEE') return true
+  if (userRole === 'HOD' && targetRole === 'EMPLOYEE') return true
   return userRole === targetRole
 }
 

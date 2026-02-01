@@ -15,8 +15,8 @@ interface Employee {
   position: string | null
   role: string
   isActive: boolean
-  managerId?: string | null
-  manager: {
+  hodId?: string | null
+  hod: {
     firstName: string
     lastName: string
     employeeId: string
@@ -26,7 +26,7 @@ interface Employee {
   }
 }
 
-interface Manager {
+interface HOD {
   id: string
   firstName: string
   lastName: string
@@ -36,14 +36,14 @@ interface Manager {
 
 export default function EmployeesTable({ 
   employees, 
-  managers 
+  hods 
 }: { 
   employees: Employee[]
-  managers: Manager[]
+  hods: HOD[]
 }) {
   const [deleting, setDeleting] = useState<string | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
-  const [editData, setEditData] = useState<{ role?: string; managerId?: string; isActive?: boolean }>({})
+  const [editData, setEditData] = useState<{ role?: string; hodId?: string; isActive?: boolean }>({})
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this employee?')) {
@@ -74,7 +74,8 @@ export default function EmployeesTable({
     setEditing(employee.id)
     setEditData({
       role: employee.role,
-      managerId: employee.managerId || '',
+      // Admin users should never have a HOD assigned
+      hodId: employee.role === 'ADMIN' ? '' : (employee.hodId || ''),
       isActive: employee.isActive,
     })
   }
@@ -86,17 +87,27 @@ export default function EmployeesTable({
 
   const handleSave = async (id: string) => {
     try {
+      // Ensure Admin users never have a HOD assigned
+      const employee = employees.find(e => e.id === id)
+      const saveData = { ...editData }
+      if (employee?.role === 'ADMIN' || saveData.role === 'ADMIN') {
+        saveData.hodId = ''
+      }
+
       const response = await fetch(`/api/admin/employees/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editData),
+        body: JSON.stringify(saveData),
       })
 
       if (response.ok) {
         toast.success('Employee updated successfully!')
         setEditing(null)
         setEditData({})
-        window.location.reload()
+        // Small delay before reload to show success message
+        setTimeout(() => {
+          window.location.reload()
+        }, 300)
       } else {
         const result = await response.json()
         toast.error(result.error || 'Failed to update employee')
@@ -110,7 +121,7 @@ export default function EmployeesTable({
     switch (role) {
       case 'ADMIN':
         return 'bg-purple-100 text-purple-800'
-      case 'MANAGER':
+      case 'HOD':
         return 'bg-blue-100 text-blue-800'
       default:
         return 'bg-gray-100 text-gray-800'
@@ -134,7 +145,7 @@ export default function EmployeesTable({
                 Department
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Manager
+                HOD
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Role
@@ -193,27 +204,29 @@ export default function EmployeesTable({
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {editing === employee.id ? (
+                  {employee.role === 'ADMIN' ? (
+                    <span className="text-gray-400 italic">N/A - Ultimate User</span>
+                  ) : editing === employee.id ? (
                     <select
-                      value={editData.managerId || ''}
-                      onChange={(e) => setEditData({ ...editData, managerId: e.target.value || undefined })}
+                      value={editData.hodId || ''}
+                      onChange={(e) => setEditData({ ...editData, hodId: e.target.value || undefined })}
                       className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
-                      title="Reporting Manager"
+                      title="Reporting HOD"
                     >
-                      <option value="">No Manager</option>
-                      {managers && Array.isArray(managers) && managers.length > 0 ? (
-                        managers.filter((m: Manager) => !m.role || m.role === 'MANAGER' || m.role === 'ADMIN').map((m: Manager) => (
-                          <option key={m.id} value={m.id}>
-                            {m.firstName} {m.lastName} ({m.employeeId})
+                      <option value="">No HOD</option>
+                      {hods && Array.isArray(hods) && hods.length > 0 ? (
+                        hods.filter((h: HOD) => h.role === 'HOD' && h.id !== employee.id).map((h: HOD) => (
+                          <option key={h.id} value={h.id}>
+                            {h.firstName} {h.lastName} ({h.employeeId})
                           </option>
                         ))
                       ) : (
-                        <option disabled>No managers available</option>
+                        <option disabled>No HODs available</option>
                       )}
                     </select>
                   ) : (
-                    employee.manager ? (
-                      `${employee.manager.firstName} ${employee.manager.lastName}`
+                    employee.hod ? (
+                      `${employee.hod.firstName} ${employee.hod.lastName}`
                     ) : (
                       <span className="text-yellow-600 font-medium">Not Assigned</span>
                     )
@@ -227,7 +240,7 @@ export default function EmployeesTable({
                       className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="EMPLOYEE">EMPLOYEE</option>
-                      <option value="MANAGER">MANAGER</option>
+                      <option value="HOD">HOD</option>
                       <option value="ADMIN">ADMIN</option>
                     </select>
                   ) : (

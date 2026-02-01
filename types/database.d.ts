@@ -1,6 +1,6 @@
-export type UserRole = 'EMPLOYEE' | 'MANAGER' | 'ADMIN'
+export type UserRole = 'EMPLOYEE' | 'HOD' | 'ADMIN'
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
-export type LeaveCategory = 'SICK' | 'VACATION' | 'PERSONAL' | 'MATERNITY' | 'PATERNITY' | 'BEREAVEMENT' | 'UNPAID'
+export type LeaveCategory = 'EARN_LEAVE' | 'CASUAL' | 'SICK' | 'UNPAID' | 'LEAVE_IN_LIEU' | 'VACATION' | 'PERSONAL' | 'MATERNITY' | 'PATERNITY' | 'BEREAVEMENT'
 
 export interface User {
   id: string
@@ -12,7 +12,7 @@ export interface User {
   phone: string | null
   department: string | null
   position: string | null
-  managerId: string | null
+  hodId: string | null
   role: UserRole
   isActive: boolean
   createdAt: Date
@@ -66,6 +66,31 @@ export interface LeavePolicy {
   minDaysNotice: number
   maxConsecutiveDays: number | null
   isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface LeaveType {
+  id: string
+  name: string
+  type: LeaveCategory
+  maxDays: number
+  carryForward: boolean
+  isActive: boolean
+  earningRate?: number | null
+  workingDaysRequired?: number | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Attendance {
+  id: string
+  userId: string
+  date: Date
+  checkIn: Date | null
+  checkOut: Date | null
+  status: 'PRESENT' | 'ABSENT' | 'HALF_DAY' | 'ON_LEAVE'
+  remarks: string | null
   createdAt: Date
   updatedAt: Date
 }

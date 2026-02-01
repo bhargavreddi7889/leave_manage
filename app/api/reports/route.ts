@@ -32,14 +32,18 @@ export async function GET(req: NextRequest) {
     if (session.user.role === 'EMPLOYEE') {
       sql += ` AND lr.user_id = $${paramCount++}`
       params.push(session.user.id)
-    } else if (session.user.role === 'MANAGER') {
-      sql += ` AND u.manager_id = $${paramCount++}`
+    } else if (session.user.role === 'HOD') {
+      sql += ` AND u.hod_id = $${paramCount++}`
       params.push(session.user.id)
     }
 
-    if (startDate && endDate) {
-      sql += ` AND lr.start_date >= $${paramCount++} AND lr.start_date <= $${paramCount++}`
-      params.push(new Date(startDate), new Date(endDate))
+    if (startDate) {
+      sql += ` AND lr.start_date >= $${paramCount++}`
+      params.push(new Date(startDate))
+    }
+    if (endDate) {
+      sql += ` AND lr.end_date <= $${paramCount++}`
+      params.push(new Date(endDate))
     }
 
     sql += ` ORDER BY lr.created_at DESC`

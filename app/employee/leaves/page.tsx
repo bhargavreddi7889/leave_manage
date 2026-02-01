@@ -29,16 +29,27 @@ export default async function LeavesPage() {
     isActive: lt.isActive,
   }))
 
-  // Check if user has a manager assigned
+  // Check if user has a HOD assigned
   const user = await findUserById(session.user.id)
-  const hasManager = !!user?.managerId
+  const hasManager = !!user?.hodId
 
   return (
     <Layout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Leave Requests</h1>
-          <p className="mt-2 text-gray-600">Apply for leave and track your requests</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">My Leave Requests</h1>
+            <p className="mt-2 text-gray-600">Apply for leave and track your requests</p>
+          </div>
+          <a
+            href="/reports"
+            className="btn-primary flex items-center space-x-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Download Excel Report</span>
+          </a>
         </div>
 
         {!hasManager && (
@@ -51,7 +62,7 @@ export default async function LeavesPage() {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
-                  <strong>Notice:</strong> You cannot apply for leave until a reporting manager is assigned. Please contact your administrator.
+                  <strong>Notice:</strong> You cannot apply for leave until a reporting HOD is assigned. Please contact your administrator.
                 </p>
               </div>
             </div>

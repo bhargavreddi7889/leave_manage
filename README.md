@@ -4,15 +4,18 @@ A comprehensive web-based leave management system built with Next.js 14, Postgre
 
 ## Features
 
-- **Role-Based Access Control**: Three user roles (Admin, Manager, Employee) with appropriate permissions
+- **Role-Based Access Control**: Three user roles (Admin, HOD, Employee) with appropriate permissions
 - **Leave Application**: Employees can apply for leave with automatic balance checking
-- **Approval Workflow**: Managers can approve/reject leave requests with comments
+- **Approval Workflow**: HODs can approve/reject leave requests with comments
 - **Leave Balance Management**: Automatic calculation and tracking of leave balances
-- **Dashboard & Analytics**: Comprehensive dashboards for all user roles
-- **Report Generation**: Export leave reports to Excel format
+- **Attendance Management**: Daily check-in/check-out with automatic status calculation
+- **Dashboard & Analytics**: Comprehensive dashboards for all user roles with attendance summaries
+- **Report Generation**: Export leave and attendance reports to Excel format
 - **Profile Management**: Users can update their profile and change passwords
-- **Employee Management**: Admins can manage employees, assign managers, and configure roles
+- **Employee Management**: Admins can manage employees, assign HODs, and configure roles
 - **Policy Management**: Admins can manage leave types and policies
+- **Auto-Fill Attendance**: Approved leaves automatically create attendance records
+- **Audit Logging**: Admin attendance modifications are logged for accountability
 - **Beautiful UI**: Modern, responsive design with Tailwind CSS and Satoshi font
 
 ## Tech Stack
@@ -86,28 +89,38 @@ A comprehensive web-based leave management system built with Next.js 14, Postgre
 ## User Roles & Permissions
 
 ### Admin/HR
-- Manage employees (create, edit, delete, assign managers)
+- Manage employees (create, edit, delete, assign HODs)
 - Manage leave policies and types (create, edit, delete)
 - View all leave requests (read-only overview)
 - Generate reports
 - Full system access
-- **Cannot approve/reject leaves** (managers only)
+- **Cannot approve/reject leaves** (HODs only)
+- **Attendance**: Check in/out daily like employees
+- **Attendance Management**: View and modify any user's attendance
+- **Override Attendance**: Can override attendance with reason (logged for audit)
+- **Organization Reports**: Access organization-wide attendance reports
 
-### Manager
+### HOD (Head of Department)
 - Approve/reject leave requests from team members
 - Add comments when approving/rejecting
 - View team leave requests
 - View team availability and calendar
 - Access team analytics
 - Manage own leave requests
+- **Attendance**: Check in/out daily like employees
+- **Team Attendance**: View and modify team member attendance with remarks
+- **Cannot edit own attendance** (prevents misuse)
 
 ### Employee
-- Apply for leave (only if manager is assigned)
+- Apply for leave (only if HOD is assigned)
 - View leave balance
 - Track leave request status
 - View personal leave history
 - Edit/cancel pending leave requests
 - Update profile and change password
+- **Attendance**: Check in/out daily
+- **View own attendance**: Personal attendance summary and reports
+- **Cannot modify attendance** once submitted
 
 ## Project Structure
 
@@ -116,6 +129,7 @@ A comprehensive web-based leave management system built with Next.js 14, Postgre
 │   ├── api/                     # API routes
 │   │   ├── admin/               # Admin API endpoints
 │   │   ├── auth/                # Authentication endpoints
+│   │   ├── attendance/          # Attendance management endpoints
 │   │   ├── leaves/              # Leave management endpoints
 │   │   ├── profile/              # Profile management endpoints
 │   │   └── reports/              # Report generation
@@ -124,13 +138,15 @@ A comprehensive web-based leave management system built with Next.js 14, Postgre
 │   │   ├── employees/           # Employee management
 │   │   ├── policies/            # Policy management
 │   │   └── approvals/           # View all leaves
-│   ├── manager/                 # Manager pages
-│   │   ├── dashboard/           # Manager dashboard
+│   ├── hod/                     # HOD pages
+│   │   ├── dashboard/           # HOD dashboard
 │   │   ├── approvals/           # Leave approvals
-│   │   └── leaves/              # Manager's own leaves
+│   │   ├── leaves/              # HOD's own leaves
+│   │   └── attendance/          # Team attendance management
 │   ├── employee/                # Employee pages
 │   │   ├── dashboard/           # Employee dashboard
-│   │   └── leaves/              # Leave management
+│   │   ├── leaves/              # Leave management
+│   │   └── attendance/          # Personal attendance
 │   ├── dashboard/               # Main dashboard (redirects to role-specific)
 │   ├── login/                   # Login page
 │   ├── signup/                  # Signup page
@@ -186,17 +202,30 @@ A comprehensive web-based leave management system built with Next.js 14, Postgre
 - `PUT /api/admin/leave-types/[id]` - Update leave type
 - `DELETE /api/admin/leave-types/[id]` - Delete leave type
 
+### Attendance
+- `GET /api/attendance/today` - Get today's attendance status
+- `POST /api/attendance/checkin` - Check in
+- `POST /api/attendance/checkout` - Check out
+- `GET /api/attendance` - Get attendance records (filterable)
+- `POST /api/attendance` - Create/update attendance (Admin/HOD only)
+- `PUT /api/attendance/[id]` - Update attendance (Admin/HOD only)
+- `GET /api/attendance/summary` - Get attendance summary statistics
+- `POST /api/attendance/auto-fill` - Auto-fill attendance from approved leaves (cron job)
+
 ### Reports
-- `GET /api/reports?format=excel` - Generate Excel report
+- `GET /api/reports?format=excel` - Generate Excel leave report
+- `GET /api/reports/attendance` - Generate Excel attendance report
 
 ## Database Schema
 
 The system uses the following main tables:
-- **users**: Employees, managers, and admins
-- **leave_types**: Types of leave (Sick, Vacation, Personal, etc.)
+- **users**: Employees, HODs, and admins
+- **leave_types**: Types of leave (Earn Leave, Casual, Sick, Unpaid, Leave in lieu, etc.)
 - **leave_requests**: Leave applications
 - **leave_balances**: Track leave balances per user per year
 - **leave_policies**: Leave policies and rules (if implemented)
+- **attendance**: Daily attendance records (check-in, check-out, status)
+- **attendance_audit_log**: Audit trail for Admin attendance modifications
 
 ## Development
 
@@ -215,6 +244,12 @@ npm run db:setup
 
 # Seed database
 npm run db:seed
+
+# Run attendance migration (if upgrading)
+npm run db:migrate-attendance
+
+# Auto-fill attendance from approved leaves (run as cron job)
+npm run attendance:auto-fill
 ```
 
 ## Security Features
@@ -268,16 +303,67 @@ npm run db:seed
 - Filter by date range
 - Includes employee details, dates, status, and more
 
+## Attendance Module
+
+### Employee Attendance Flow
+1. Employee logs in and checks if today's attendance is marked
+2. If not marked, employee must check in
+3. At end of day, employee checks out
+4. Status automatically calculated: Present, Half Day, Absent, or Leave
+5. Employee can view only their own attendance summary
+6. Employee cannot modify attendance once submitted
+
+### HOD Attendance Flow
+1. HOD is treated as a normal employee for attendance
+2. HOD must check in and check out daily
+3. HOD's attendance is reflected in their dashboard
+4. **Additional privileges:**
+   - View attendance of team members
+   - Correct or update team attendance with remarks
+   - Cannot edit their own attendance (prevents misuse)
+   - Attendance data contributes to overall reports
+
+### Admin Attendance Flow
+1. Admin is not exempt from attendance tracking
+2. Admin must check in and check out daily
+3. Admin's attendance shown in personal dashboard
+4. **Additional privileges:**
+   - View and modify any user's attendance
+   - Override attendance in exceptional cases (with reason)
+   - Access organization-wide attendance reports
+   - All edits are logged for audit and accountability
+
+### Auto-Fill from Approved Leaves
+- On cron job or daily backend job:
+  - If leave approved for date X, create attendance row with status = "ON_LEAVE" and marked_by = "SYSTEM"
+- Employee cannot check-in on leave day
+- Dashboard shows Leave status automatically
+
+### Setting Up Auto-Fill Cron Job
+Add to your cron scheduler (crontab or system scheduler):
+```bash
+# Run daily at 1 AM
+0 1 * * * cd /path/to/project && npm run attendance:auto-fill
+```
+
+Or use the API endpoint with authentication:
+```bash
+curl -X POST https://your-domain.com/api/attendance/auto-fill \
+  -H "Authorization: Bearer YOUR_CRON_SECRET"
+```
+
+Set `CRON_SECRET` in your `.env` file for API endpoint authentication.
+
 ## Future Enhancements
 
 - Email notifications for leave requests and approvals
 - PDF report generation
-- Calendar view for leaves
+- Calendar view for leaves and attendance
 - Leave attachment uploads
 - Multi-year leave balance tracking
 - Advanced analytics and charts
 - Department-wise analytics
-- Audit logs
+- Real-time attendance notifications
 
 ## License
 

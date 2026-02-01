@@ -37,7 +37,7 @@ export default async function AdminApprovalsPage() {
             </div>
             <div className="ml-3">
               <p className="text-sm text-blue-700">
-                <strong>Note:</strong> As an Admin, you can view all leave requests but cannot approve or reject them. Only managers can approve leave requests for their team members.
+                <strong>Note:</strong> As an Admin, you can view all leave requests. You can approve HOD leave requests, while HODs approve employee leave requests.
               </p>
             </div>
           </div>

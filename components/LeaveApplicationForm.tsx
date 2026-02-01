@@ -45,7 +45,7 @@ export default function LeaveApplicationForm({
 }: { 
   leaveTypes: LeaveType[]
   balances: Balance[]
-  hasManager?: boolean
+  hasManager?: boolean // For employees: HOD, For HOD: Admin
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)

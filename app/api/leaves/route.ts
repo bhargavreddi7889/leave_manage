@@ -14,12 +14,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user has a manager assigned (for employees)
+    // Check if user has a HOD assigned (for employees)
     if (session.user.role === 'EMPLOYEE') {
       const user = await findUserById(session.user.id)
-      if (!user?.managerId) {
+      if (!user?.hodId) {
         return NextResponse.json(
-          { error: 'You cannot apply for leave until a reporting manager is assigned. Please contact your administrator.' },
+          { error: 'You cannot apply for leave until a reporting HOD is assigned. Please contact your administrator.' },
           { status: 400 }
         )
       }
@@ -97,6 +97,8 @@ export async function GET(req: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+
+    // Filter out soft-deleted records in all queries
 
     const leaves = await findLeaveRequests({ userId: session.user.id })
 

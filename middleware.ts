@@ -13,16 +13,16 @@ export default withAuth(
     if (path.startsWith("/admin") && token.role !== "ADMIN") {
       return NextResponse.redirect(
         new URL(
-          token.role === "MANAGER"
-            ? "/manager/dashboard"
+          token.role === "HOD"
+            ? "/hod/dashboard"
             : "/employee/dashboard",
           req.url
         )
       );
     }
 
-    // MANAGER ROUTES
-    if (path.startsWith("/manager") && !["ADMIN", "MANAGER"].includes(token.role)) {
+    // HOD ROUTES
+    if (path.startsWith("/hod") && !["ADMIN", "HOD"].includes(token.role)) {
       return NextResponse.redirect(
         new URL("/employee/dashboard", req.url)
       );
@@ -34,7 +34,7 @@ export default withAuth(
         new URL(
           token.role === "ADMIN"
             ? "/admin/dashboard"
-            : "/manager/dashboard",
+            : "/hod/dashboard",
           req.url
         )
       );
@@ -54,7 +54,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/admin/:path*",
-    "/manager/:path*",
+    "/hod/:path*",
     "/employee/:path*",
     "/profile/:path*",
   ],

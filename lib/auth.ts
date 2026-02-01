@@ -10,12 +10,12 @@ export async function verifyPassword(password: string, hashedPassword: string): 
   return compare(password, hashedPassword)
 }
 
-export async function getUserByEmail(email: string): Promise<(User & { manager?: { id: string; firstName: string; lastName: string; email: string } | null }) | null> {
+export async function getUserByEmail(email: string): Promise<(User & { hod?: { id: string; firstName: string; lastName: string; email: string } | null }) | null> {
   const user = await queryOne(
     `SELECT u.*, 
-     m.id as manager_id, m.first_name as manager_first_name, m.last_name as manager_last_name, m.email as manager_email
+     h.id as hod_id, h.first_name as hod_first_name, h.last_name as hod_last_name, h.email as hod_email
      FROM users u
-     LEFT JOIN users m ON u.manager_id = m.id
+     LEFT JOIN users h ON u.hod_id = h.id
      WHERE u.email = $1`,
     [email]
   )
@@ -32,16 +32,16 @@ export async function getUserByEmail(email: string): Promise<(User & { manager?:
     phone: user.phone,
     department: user.department,
     position: user.position,
-    managerId: user.manager_id,
+    hodId: user.hod_id,
     role: user.role,
     isActive: user.is_active,
     createdAt: user.created_at,
     updatedAt: user.updated_at,
-    manager: user.manager_id ? {
-      id: user.manager_id,
-      firstName: user.manager_first_name,
-      lastName: user.manager_last_name,
-      email: user.manager_email,
+    hod: user.hod_id ? {
+      id: user.hod_id,
+      firstName: user.hod_first_name,
+      lastName: user.hod_last_name,
+      email: user.hod_email,
     } : null
   } as any
 }
@@ -56,15 +56,15 @@ export async function createUser(data: {
   phone?: string
   department?: string
   position?: string
-  managerId?: string
+  hodId?: string
 }): Promise<User> {
   const hashedPassword = await hashPassword(data.password)
   
   const result = await query(
-    `INSERT INTO users (email, password, first_name, last_name, employee_id, role, phone, department, position, manager_id)
+    `INSERT INTO users (email, password, first_name, last_name, employee_id, role, phone, department, position, hod_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING *`,
-    [data.email, hashedPassword, data.firstName, data.lastName, data.employeeId, data.role, data.phone || null, data.department || null, data.position || null, data.managerId || null]
+    [data.email, hashedPassword, data.firstName, data.lastName, data.employeeId, data.role, data.phone || null, data.department || null, data.position || null, data.hodId || null]
   )
   
   const row = result.rows[0]
@@ -78,7 +78,7 @@ export async function createUser(data: {
     phone: row.phone,
     department: row.department,
     position: row.position,
-    managerId: row.manager_id,
+    hodId: row.hod_id,
     role: row.role,
     isActive: row.is_active,
     createdAt: row.created_at,

@@ -1,4 +1,7 @@
+'use client'
+
 import { Calendar } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface Balance {
   leaveType: {
@@ -11,8 +14,13 @@ interface Balance {
 }
 
 export default function LeaveBalanceCard({ balances }: { balances: Balance[] }) {
+  const router = useRouter()
+
   return (
-    <div className="card hover:shadow-xl transition-all duration-300">
+    <div 
+      className="card hover:shadow-xl hover:-translate-y-1 hover:scale-[1.02] transition-all duration-300 cursor-pointer active:scale-95"
+      onClick={() => router.push('/employee/leaves')}
+    >
       <div className="flex items-center space-x-2 mb-3">
         <Calendar className="w-4 h-4 text-primary-600" />
         <h2 className="text-lg font-semibold text-gray-900">Leave Balance</h2>

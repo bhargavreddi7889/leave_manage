@@ -1,4 +1,7 @@
+'use client'
+
 import { Calendar, Clock, CheckCircle, XCircle, Users } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface Stats {
   totalLeaves: number
@@ -21,6 +24,8 @@ export default function DashboardStats({
   teamStats: TeamStats | null
   role: string
 }) {
+  const router = useRouter()
+
   const statCards = [
     {
       label: 'Total Leaves',
@@ -48,7 +53,7 @@ export default function DashboardStats({
     },
   ]
 
-  if (teamStats && (role === 'MANAGER' || role === 'ADMIN')) {
+  if (teamStats && (role === 'HOD' || role === 'ADMIN')) {
     statCards.push({
       label: 'Pending Approvals',
       value: teamStats.pendingApprovals,
@@ -78,10 +83,17 @@ export default function DashboardStats({
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {statCards.map((stat) => {
         const Icon = stat.icon
+        const href = role === 'EMPLOYEE' 
+          ? `/employee/leaves${stat.label === 'Total' ? '' : `?status=${stat.label.toUpperCase()}`}`
+          : role === 'HOD'
+          ? `/hod/approvals${stat.label === 'Pending Approvals' ? '' : `?status=${stat.label.toUpperCase()}`}`
+          : `/admin/approvals${stat.label === 'Total Leaves' ? '' : `?status=${stat.label.toUpperCase()}`}`
+
         return (
           <div 
             key={stat.label} 
-            className="card hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group"
+            onClick={() => router.push(href)}
+            className="card hover:shadow-xl hover:-translate-y-1 hover:scale-105 transition-all duration-300 cursor-pointer group active:scale-95"
           >
             <div className="flex items-center justify-between">
               <div className="flex-1">

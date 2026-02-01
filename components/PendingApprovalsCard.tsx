@@ -9,8 +9,8 @@ interface PendingApprovalsCardProps {
 
 export default function PendingApprovalsCard({ count }: PendingApprovalsCardProps) {
   return (
-    <Link href="/manager/approvals" className="block">
-      <div className="bg-gradient-to-br from-orange-500 via-red-500 to-orange-600 rounded-xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer">
+    <Link href="/hod/approvals" className="block">
+      <div className="bg-gradient-to-br from-orange-500 via-red-500 to-orange-600 rounded-xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-[1.02] cursor-pointer active:scale-95">
         <div className="flex items-center justify-between text-white">
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">

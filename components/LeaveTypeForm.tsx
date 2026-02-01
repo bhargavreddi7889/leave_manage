@@ -9,7 +9,7 @@ import { Plus, Settings } from 'lucide-react'
 
 const leaveTypeSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  type: z.enum(['SICK', 'VACATION', 'PERSONAL', 'MATERNITY', 'PATERNITY', 'BEREAVEMENT', 'UNPAID']),
+  type: z.enum(['EARN_LEAVE', 'CASUAL', 'SICK', 'UNPAID', 'LEAVE_IN_LIEU', 'VACATION', 'PERSONAL', 'MATERNITY', 'PATERNITY', 'BEREAVEMENT']),
   maxDays: z.number().min(1, 'Max days must be at least 1'),
   carryForward: z.boolean().default(false),
 })
@@ -84,13 +84,16 @@ export default function LeaveTypeForm() {
             <div>
               <label className="label">Type</label>
               <select {...register('type')} className="input-field">
+                <option value="EARN_LEAVE">Earn Leave</option>
+                <option value="CASUAL">Casual Leave</option>
                 <option value="SICK">Sick Leave</option>
+                <option value="UNPAID">Leave without Pay</option>
+                <option value="LEAVE_IN_LIEU">Leave in lieu of holiday</option>
                 <option value="VACATION">Vacation</option>
                 <option value="PERSONAL">Personal</option>
                 <option value="MATERNITY">Maternity</option>
                 <option value="PATERNITY">Paternity</option>
                 <option value="BEREAVEMENT">Bereavement</option>
-                <option value="UNPAID">Unpaid</option>
               </select>
             </div>
 

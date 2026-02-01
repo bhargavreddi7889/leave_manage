@@ -3,13 +3,13 @@ import { User, LeaveType, LeaveRequest, LeaveBalance } from '@/types/database'
 
 // User queries
 export async function findUserByEmail(email: string): Promise<User | null> {
-  const row = await queryOne('SELECT * FROM users WHERE email = $1', [email])
+  const row = await queryOne('SELECT * FROM users WHERE email = $1 AND deleted_at IS NULL', [email])
   if (!row) return null
   return mapUserRow(row)
 }
 
 export async function findUserById(id: string): Promise<User | null> {
-  const row = await queryOne('SELECT * FROM users WHERE id = $1', [id])
+  const row = await queryOne('SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL', [id])
   if (!row) return null
   return mapUserRow(row)
 }
@@ -25,7 +25,7 @@ function mapUserRow(row: any): User {
     phone: row.phone,
     department: row.department,
     position: row.position,
-    managerId: row.manager_id,
+    hodId: row.hod_id,
     role: row.role,
     isActive: row.is_active,
     createdAt: row.created_at,
@@ -34,18 +34,18 @@ function mapUserRow(row: any): User {
 }
 
 export async function countUsers(): Promise<number> {
-  const result = await queryOne('SELECT COUNT(*) as count FROM users', [])
+  const result = await queryOne('SELECT COUNT(*) as count FROM users WHERE deleted_at IS NULL', [])
   return parseInt(result?.count || '0')
 }
 
-export async function findUsers(where?: { managerId?: string; role?: string; isActive?: boolean }): Promise<User[]> {
-  let sql = 'SELECT * FROM users WHERE 1=1'
+export async function findUsers(where?: { hodId?: string; role?: string; isActive?: boolean }): Promise<User[]> {
+  let sql = 'SELECT * FROM users WHERE deleted_at IS NULL'
   const params: any[] = []
   let paramCount = 1
 
-  if (where?.managerId) {
-    sql += ` AND manager_id = $${paramCount++}`
-    params.push(where.managerId)
+  if (where?.hodId) {
+    sql += ` AND hod_id = $${paramCount++}`
+    params.push(where.hodId)
   }
   if (where?.role) {
     sql += ` AND role = $${paramCount++}`
@@ -63,7 +63,7 @@ export async function findUsers(where?: { managerId?: string; role?: string; isA
 
 // Leave Type queries
 export async function findLeaveTypeById(id: string): Promise<LeaveType | null> {
-  const row = await queryOne('SELECT * FROM leave_types WHERE id = $1', [id])
+  const row = await queryOne('SELECT * FROM leave_types WHERE id = $1 AND deleted_at IS NULL', [id])
   if (!row) return null
   return {
     id: row.id,
@@ -72,13 +72,15 @@ export async function findLeaveTypeById(id: string): Promise<LeaveType | null> {
     maxDays: row.max_days,
     carryForward: row.carry_forward,
     isActive: row.is_active,
+    earningRate: row.earning_rate,
+    workingDaysRequired: row.working_days_required,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
 }
 
 export async function findActiveLeaveTypes(): Promise<LeaveType[]> {
-  const rows = await queryMany('SELECT * FROM leave_types WHERE is_active = true ORDER BY name')
+  const rows = await queryMany('SELECT * FROM leave_types WHERE is_active = true AND deleted_at IS NULL ORDER BY name')
   return rows.map((row: any) => ({
     id: row.id,
     name: row.name,
@@ -92,14 +94,14 @@ export async function findActiveLeaveTypes(): Promise<LeaveType[]> {
 }
 
 // Leave Request queries
-export async function findLeaveRequests(where?: { userId?: string; status?: string; managerId?: string }): Promise<any[]> {
+export async function findLeaveRequests(where?: { userId?: string; status?: string; hodId?: string }): Promise<any[]> {
   let sql = `SELECT lr.*, 
     u.id as user_id, u.first_name as user_first_name, u.last_name as user_last_name, u.employee_id as user_employee_id, u.email as user_email,
     lt.id as leave_type_id, lt.name as leave_type_name, lt.type as leave_type_type
     FROM leave_requests lr
     JOIN users u ON lr.user_id = u.id
     JOIN leave_types lt ON lr.leave_type_id = lt.id
-    WHERE 1=1`
+    WHERE lr.deleted_at IS NULL AND u.deleted_at IS NULL AND lt.deleted_at IS NULL`
   const params: any[] = []
   let paramCount = 1
 
@@ -111,9 +113,9 @@ export async function findLeaveRequests(where?: { userId?: string; status?: stri
     sql += ` AND lr.status = $${paramCount++}`
     params.push(where.status)
   }
-  if (where?.managerId) {
-    sql += ` AND u.manager_id = $${paramCount++}`
-    params.push(where.managerId)
+  if (where?.hodId) {
+    sql += ` AND u.hod_id = $${paramCount++}`
+    params.push(where.hodId)
   }
 
   sql += ' ORDER BY lr.created_at DESC'
@@ -185,19 +187,16 @@ export async function findLeaveRequestById(id: string): Promise<any | null> {
   }
 }
 
-export async function countLeaveRequests(where?: { userId?: string; status?: string; managerId?: string }): Promise<number> {
-  let sql = 'SELECT COUNT(*) as count FROM leave_requests lr'
+export async function countLeaveRequests(where?: { userId?: string; status?: string; hodId?: string }): Promise<number> {
+  let sql = `SELECT COUNT(*) as count FROM leave_requests lr
+    JOIN users u ON lr.user_id = u.id
+    WHERE lr.deleted_at IS NULL AND u.deleted_at IS NULL`
   const params: any[] = []
   let paramCount = 1
-  let hasJoin = false
 
-  if (where?.managerId) {
-    sql += ' JOIN users u ON lr.user_id = u.id'
-    hasJoin = true
-    sql += ` WHERE u.manager_id = $${paramCount++}`
-    params.push(where.managerId)
-  } else {
-    sql += ' WHERE 1=1'
+  if (where?.hodId) {
+    sql += ` AND u.hod_id = $${paramCount++}`
+    params.push(where.hodId)
   }
 
   if (where?.userId) {

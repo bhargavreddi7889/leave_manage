@@ -5,15 +5,17 @@ import { redirect } from 'next/navigation'
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
   
-  if (!session) {
-    redirect('/login')
+  if (!session || !session.user) {
+    redirect('/login?error=SessionExpired')
   }
 
   // Redirect to role-specific dashboard
-  if (session.user.role === 'ADMIN') {
+  const userRole = session.user.role
+  
+  if (userRole === 'ADMIN') {
     redirect('/admin/dashboard')
-  } else if (session.user.role === 'MANAGER') {
-    redirect('/manager/dashboard')
+  } else if (userRole === 'HOD') {
+    redirect('/hod/dashboard')
   } else {
     redirect('/employee/dashboard')
   }

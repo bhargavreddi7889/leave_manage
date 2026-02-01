@@ -52,8 +52,16 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as any).role;
+        // Ensure role is always HOD if it was MANAGER (for migration compatibility)
+        let role = (user as any).role;
+        if (role === 'MANAGER') {
+          role = 'HOD';
+        }
+        token.role = role as UserRole;
         token.employeeId = (user as any).employeeId;
+      } else if ((token.role as any) === 'MANAGER') {
+        // Fix old tokens that still have MANAGER role
+        token.role = 'HOD';
       }
       return token;
     },
@@ -61,7 +69,12 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub!;
-        session.user.role = token.role as UserRole;
+        // Ensure role is HOD if token still has MANAGER (migration compatibility)
+        let role = token.role as UserRole | string;
+        if (role === 'MANAGER') {
+          role = 'HOD';
+        }
+        session.user.role = role as UserRole;
         session.user.employeeId = token.employeeId as string;
       }
       return session;
@@ -77,15 +90,17 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
 
-  // ✅ FORCE correct secure cookie for Vercel
+  // ✅ Cookie configuration - secure only in production
   cookies: {
     sessionToken: {
-      name: "__Secure-next-auth.session-token",
+      name: process.env.NODE_ENV === 'production' 
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
       },
     },
   },

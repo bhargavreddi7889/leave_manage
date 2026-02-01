@@ -8,7 +8,16 @@
     "start": "next start",
     "lint": "next lint",
     "db:setup": "tsx scripts/setup-db.ts",
-    "db:seed": "tsx scripts/seed.ts"
+    "db:seed": "tsx scripts/seed.ts",
+    "db:migrate": "tsx scripts/migrate-to-hod.ts",
+    "db:cleanup": "tsx scripts/cleanup-manager-data.ts",
+    "db:migrate-attendance": "tsx scripts/migrate-attendance.ts",
+    "db:migrate-attendance-policy": "tsx scripts/migrate-attendance-policy.ts",
+    "db:migrate-audit-logs": "tsx scripts/migrate-audit-logs.ts",
+    "db:fix-attendance-columns": "tsx scripts/fix-attendance-columns.ts",
+    "db:add-attendance-columns": "tsx scripts/add-attendance-columns.ts",
+    "attendance:auto-fill": "tsx scripts/auto-fill-leave-attendance.ts",
+    "attendance:mark-missed-checkouts": "tsx scripts/mark-missed-checkouts.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",

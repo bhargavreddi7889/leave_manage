@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { createUser } from '@/lib/auth'
 import { initializeLeaveBalances } from '@/lib/leave-calculations'
+import { createAuditLog } from '@/lib/audit-log'
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { email, password, firstName, lastName, employeeId, phone, department, position, managerId, role } = body
+    const { email, password, firstName, lastName, employeeId, phone, department, position, hodId, role } = body
 
     if (!email || !password || !firstName || !lastName || !employeeId) {
       return NextResponse.json(
@@ -34,13 +35,34 @@ export async function POST(req: NextRequest) {
       phone,
       department,
       position,
-      managerId: managerId || null,
+      hodId: hodId || null,
       role: role || 'EMPLOYEE',
     })
 
     // Initialize leave balances for new user
     const currentYear = new Date().getFullYear()
     await initializeLeaveBalances(user.id, currentYear)
+
+    // Create audit log
+    await createAuditLog({
+      actionType: 'EMPLOYEE_CREATE',
+      entityType: 'EMPLOYEE',
+      entityId: user.id,
+      userId: session.user.id,
+      oldValues: undefined,
+      newValues: {
+        email,
+        firstName,
+        lastName,
+        employeeId,
+        role: role || 'EMPLOYEE',
+        department,
+        position,
+        hodId: hodId || null,
+      },
+      reason: 'New employee created',
+      req,
+    })
 
     return NextResponse.json(user, { status: 201 })
   } catch (error: any) {

@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
 import { User, Mail, Phone, Briefcase, Building, Save, Lock, Eye, EyeOff } from 'lucide-react'
 
 const profileSchema = z.object({
@@ -42,6 +43,7 @@ interface User {
 type PasswordForm = z.infer<typeof passwordSchema>
 
 export default function ProfileForm({ user }: { user: User }) {
+  const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
@@ -51,6 +53,7 @@ export default function ProfileForm({ user }: { user: User }) {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -85,7 +88,16 @@ export default function ProfileForm({ user }: { user: User }) {
 
       if (response.ok) {
         toast.success('Profile updated successfully!')
-        window.location.reload()
+        // Update form with new values
+        reset({
+          firstName: result.firstName,
+          lastName: result.lastName,
+          phone: result.phone || '',
+          department: result.department || '',
+          position: result.position || '',
+        })
+        // Refresh server components to show updated data
+        router.refresh()
       } else {
         toast.error(result.error || 'Failed to update profile')
       }

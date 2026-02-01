@@ -7,23 +7,25 @@ import { queryMany } from '@/lib/db'
 import PendingApprovalsCard from '@/components/PendingApprovalsCard'
 import OnLeaveTodayCard from '@/components/OnLeaveTodayCard'
 import TeamAvailabilityCard from '@/components/TeamAvailabilityCard'
+import AttendanceCheckInOut from '@/components/AttendanceCheckInOut'
+import AttendanceSummaryCard from '@/components/AttendanceSummaryCard'
 
-export default async function ManagerDashboardPage() {
+export default async function HODDashboardPage() {
   const session = await getServerSession(authOptions)
   
   if (!session) {
     redirect('/login')
   }
 
-  if (session.user.role !== 'MANAGER') {
+  if (session.user.role !== 'HOD') {
     redirect('/dashboard')
   }
 
-  // Manager stats - view team leaves
-  const pendingCount = await countLeaveRequests({ status: 'PENDING', managerId: session.user.id })
+  // HOD stats - view team leaves (employees under this HOD)
+  const pendingCount = await countLeaveRequests({ status: 'PENDING', hodId: session.user.id })
 
-  // Get team members
-  const teamMembersData = await findUsers({ managerId: session.user.id, isActive: true })
+  // Get team members (employees under this HOD)
+  const teamMembersData = await findUsers({ hodId: session.user.id, isActive: true })
   const teamMembers = teamMembersData.map((m: any) => ({
     id: m.id,
     firstName: m.firstName,
@@ -51,7 +53,7 @@ export default async function ManagerDashboardPage() {
      FROM leave_requests lr
      JOIN users u ON lr.user_id = u.id
      JOIN leave_types lt ON lr.leave_type_id = lt.id
-     WHERE u.manager_id = $1 
+     WHERE u.hod_id = $1 
      AND lr.status = 'APPROVED'
      AND lr.end_date >= $2
      ORDER BY lr.start_date ASC`,
@@ -102,7 +104,7 @@ export default async function ManagerDashboardPage() {
     `SELECT DISTINCT lr.user_id
      FROM leave_requests lr
      JOIN users u ON lr.user_id = u.id
-     WHERE u.manager_id = $1 
+     WHERE u.hod_id = $1 
      AND lr.status = 'APPROVED'
      AND lr.start_date <= $2
      AND lr.end_date >= $2`,
@@ -117,24 +119,36 @@ export default async function ManagerDashboardPage() {
 
   return (
     <Layout>
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* Welcome Header - Reduced size */}
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-xl p-6 text-white shadow-lg">
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-xl p-6 text-white shadow-lg mb-2">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold mb-1">Welcome back, {session.user.name}!</h1>
-              <p className="text-indigo-100 text-sm">Manager Dashboard</p>
+              <p className="text-indigo-100 text-sm">HOD Dashboard</p>
             </div>
           </div>
         </div>
 
         {/* Priority 1: Pending Approvals - BIG and LOUD */}
-        <PendingApprovalsCard count={pendingCount} />
+        <div className="mb-2">
+          <PendingApprovalsCard count={pendingCount} />
+        </div>
+
+        {/* Attendance Check-In/Out */}
+        <div className="mb-2">
+          <AttendanceCheckInOut />
+        </div>
 
         {/* Priority 2 & 3: Two Column Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
           <OnLeaveTodayCard todayLeaves={todayLeaves} upcomingLeaves={upcomingLeaves} />
           <TeamAvailabilityCard teamMembers={teamAvailability} />
+        </div>
+
+        {/* Attendance Summary */}
+        <div className="mb-2">
+          <AttendanceSummaryCard />
         </div>
 
         {/* Quick Actions - Smaller */}
@@ -142,16 +156,22 @@ export default async function ManagerDashboardPage() {
           <h2 className="text-lg font-bold text-gray-900 mb-3">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-3">
             <a
-              href="/manager/approvals"
+              href="/hod/approvals"
               className="block w-full btn-primary text-center py-2 text-sm"
             >
               Review Requests
             </a>
             <a
-              href="/manager/leaves"
+              href="/hod/leaves"
               className="block w-full btn-secondary text-center py-2 text-sm"
             >
               My Leaves
+            </a>
+            <a
+              href="/hod/attendance"
+              className="block w-full btn-secondary text-center py-2 text-sm"
+            >
+              Team Attendance
             </a>
             <a
               href="/profile"

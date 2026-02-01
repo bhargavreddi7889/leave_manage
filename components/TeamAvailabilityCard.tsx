@@ -1,6 +1,7 @@
 'use client'
 
 import { Users, CheckCircle2, XCircle } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface TeamMember {
   id: string
@@ -16,12 +17,16 @@ interface TeamAvailabilityCardProps {
 }
 
 export default function TeamAvailabilityCard({ teamMembers }: TeamAvailabilityCardProps) {
+  const router = useRouter()
   const availableCount = teamMembers.filter(m => !m.isOnLeave).length
   const onLeaveCount = teamMembers.filter(m => m.isOnLeave).length
   const totalCount = teamMembers.length
 
   return (
-    <div className="card">
+    <div 
+      className="card"
+      onClick={() => router.push('/hod/attendance')}
+    >
       <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
         <Users className="w-5 h-5 mr-2 text-indigo-600" />
         Team Availability
@@ -29,7 +34,7 @@ export default function TeamAvailabilityCard({ teamMembers }: TeamAvailabilityCa
       
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 hover:bg-green-100 hover:border-green-300 hover:shadow-md transition-all duration-300 cursor-pointer group">
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 hover:bg-green-100 hover:border-green-300 hover:shadow-md hover:-translate-y-0.5 hover:scale-[1.02] transition-all duration-300 cursor-pointer group active:scale-95">
             <div className="flex items-center space-x-2 mb-2">
               <CheckCircle2 className="w-5 h-5 text-green-600 group-hover:scale-110 transition-transform duration-300" />
               <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">Available</span>
@@ -38,7 +43,7 @@ export default function TeamAvailabilityCard({ teamMembers }: TeamAvailabilityCa
             <p className="text-xs text-gray-500 mt-1">out of {totalCount} members</p>
           </div>
           
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 hover:bg-orange-100 hover:border-orange-300 hover:shadow-md transition-all duration-300 cursor-pointer group">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 hover:bg-orange-100 hover:border-orange-300 hover:shadow-md hover:-translate-y-0.5 hover:scale-[1.02] transition-all duration-300 cursor-pointer group active:scale-95">
             <div className="flex items-center space-x-2 mb-2">
               <XCircle className="w-5 h-5 text-orange-600 group-hover:scale-110 transition-transform duration-300" />
               <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">On Leave</span>

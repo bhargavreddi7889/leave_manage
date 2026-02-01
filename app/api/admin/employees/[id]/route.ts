@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
-import { query } from '@/lib/db'
+import { query, queryOne } from '@/lib/db'
+import { createAuditLog } from '@/lib/audit-log'
 
 export async function PUT(
   req: NextRequest,
@@ -20,7 +21,20 @@ export async function PUT(
     const routeParams = params instanceof Promise ? await params : params
     const { id } = routeParams
     const body = await req.json()
-    const { role, managerId, isActive, department, position, phone } = body
+    const { role, hodId, isActive, department, position, phone } = body
+
+    // Get existing employee for audit
+    const existingEmployee = await queryOne(
+      `SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL`,
+      [id]
+    )
+
+    if (!existingEmployee) {
+      return NextResponse.json(
+        { error: 'Employee not found' },
+        { status: 404 }
+      )
+    }
 
     // Prevent admin from demoting themselves
     if (id === session.user.id && role && role !== 'ADMIN') {
@@ -36,7 +50,7 @@ export async function PUT(
     let paramCount = 1
 
     if (role !== undefined) {
-      if (!['EMPLOYEE', 'MANAGER', 'ADMIN'].includes(role)) {
+      if (!['EMPLOYEE', 'HOD', 'ADMIN'].includes(role)) {
         return NextResponse.json(
           { error: 'Invalid role' },
           { status: 400 }
@@ -46,10 +60,20 @@ export async function PUT(
       queryParams.push(role)
     }
 
-    if (managerId !== undefined) {
-      updates.push(`manager_id = $${paramCount++}`)
-      // Convert empty string to null for database
-      queryParams.push(managerId === '' ? null : managerId)
+    if (hodId !== undefined) {
+      // Check if user is Admin - Admin should never have a HOD
+      const currentUser = await query('SELECT role FROM users WHERE id = $1', [id])
+      const isAdmin = currentUser.rows[0]?.role === 'ADMIN' || role === 'ADMIN'
+      
+      if (isAdmin) {
+        // Force Admin users to have no HOD
+        updates.push(`hod_id = $${paramCount++}`)
+        queryParams.push(null)
+      } else {
+        updates.push(`hod_id = $${paramCount++}`)
+        // Convert empty string to null for database
+        queryParams.push(hodId === '' ? null : hodId)
+      }
     }
 
     if (isActive !== undefined) {
@@ -87,6 +111,33 @@ export async function PUT(
     const result = await query(sql, queryParams)
 
     const row = result.rows[0]
+
+    // Create audit log
+    await createAuditLog({
+      actionType: 'EMPLOYEE_UPDATE',
+      entityType: 'EMPLOYEE',
+      entityId: id,
+      userId: session.user.id,
+      oldValues: {
+        role: existingEmployee.role,
+        hodId: existingEmployee.hod_id,
+        isActive: existingEmployee.is_active,
+        department: existingEmployee.department,
+        position: existingEmployee.position,
+        phone: existingEmployee.phone,
+      },
+      newValues: {
+        role: role !== undefined ? role : existingEmployee.role,
+        hodId: hodId !== undefined ? (hodId === '' ? null : hodId) : existingEmployee.hod_id,
+        isActive: isActive !== undefined ? isActive : existingEmployee.is_active,
+        department: department !== undefined ? department : existingEmployee.department,
+        position: position !== undefined ? position : existingEmployee.position,
+        phone: phone !== undefined ? phone : existingEmployee.phone,
+      },
+      reason: 'Employee updated',
+      req,
+    })
+
     return NextResponse.json({
       id: row.id,
       email: row.email,
@@ -96,7 +147,7 @@ export async function PUT(
       phone: row.phone,
       department: row.department,
       position: row.position,
-      managerId: row.manager_id,
+      hodId: row.hod_id,
       role: row.role,
       isActive: row.is_active,
       createdAt: row.created_at,
@@ -135,7 +186,43 @@ export async function DELETE(
       )
     }
 
-    await query('DELETE FROM users WHERE id = $1', [id])
+    // Get existing employee for audit
+    const existingEmployee = await queryOne(
+      `SELECT * FROM users WHERE id = $1 AND deleted_at IS NULL`,
+      [id]
+    )
+
+    if (!existingEmployee) {
+      return NextResponse.json(
+        { error: 'Employee not found' },
+        { status: 404 }
+      )
+    }
+
+    // Soft delete - set deleted_at timestamp
+    await query(
+      `UPDATE users SET deleted_at = NOW(), is_active = false WHERE id = $1`,
+      [id]
+    )
+
+    // Create audit log
+    await createAuditLog({
+      actionType: 'EMPLOYEE_DELETE',
+      entityType: 'EMPLOYEE',
+      entityId: id,
+      userId: session.user.id,
+      oldValues: {
+        email: existingEmployee.email,
+        firstName: existingEmployee.first_name,
+        lastName: existingEmployee.last_name,
+        employeeId: existingEmployee.employee_id,
+        role: existingEmployee.role,
+        isActive: existingEmployee.is_active,
+      },
+      newValues: { deletedAt: new Date().toISOString(), isActive: false },
+      reason: 'Employee deleted (soft delete)',
+      req,
+    })
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

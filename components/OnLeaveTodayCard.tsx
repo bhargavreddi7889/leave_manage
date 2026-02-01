@@ -2,6 +2,7 @@
 
 import { Calendar, User } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
 
 interface Leave {
   id: string
@@ -24,8 +25,13 @@ interface OnLeaveTodayCardProps {
 }
 
 export default function OnLeaveTodayCard({ todayLeaves, upcomingLeaves }: OnLeaveTodayCardProps) {
+  const router = useRouter()
+
   return (
-    <div className="card">
+    <div 
+      className="card"
+      onClick={() => router.push('/hod/approvals')}
+    >
       <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
         <Calendar className="w-5 h-5 mr-2 text-indigo-600" />
         Team on Leave
@@ -42,7 +48,7 @@ export default function OnLeaveTodayCard({ todayLeaves, upcomingLeaves }: OnLeav
                 {todayLeaves.slice(0, 3).map((leave) => (
                   <div
                     key={leave.id}
-                    className="flex items-center justify-between p-2 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 hover:shadow-md transition-all duration-300 cursor-pointer group"
+                    className="flex items-center justify-between p-2 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 hover:shadow-md hover:-translate-y-0.5 hover:scale-[1.01] transition-all duration-300 cursor-pointer group active:scale-95"
                   >
                     <div className="flex items-center space-x-2">
                       <User className="w-4 h-4 text-orange-600" />
@@ -67,7 +73,7 @@ export default function OnLeaveTodayCard({ todayLeaves, upcomingLeaves }: OnLeav
                 {upcomingLeaves.slice(0, 3).map((leave) => (
                   <div
                     key={leave.id}
-                    className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 hover:shadow-md transition-all duration-300 cursor-pointer group"
+                    className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5 hover:scale-[1.01] transition-all duration-300 cursor-pointer group active:scale-95"
                   >
                     <div className="flex items-center space-x-2">
                       <User className="w-4 h-4 text-blue-600" />

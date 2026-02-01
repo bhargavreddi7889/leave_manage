@@ -10,5 +10,8 @@ export default async function Home() {
   } else {
     redirect('/login')
   }
+  
+  // This will never be reached, but TypeScript needs a return
+  return null
 }
 

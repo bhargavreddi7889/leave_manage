@@ -16,13 +16,13 @@ const employeeSchema = z.object({
   phone: z.string().optional(),
   department: z.string().optional(),
   position: z.string().optional(),
-  managerId: z.string().optional(),
-  role: z.enum(['EMPLOYEE', 'MANAGER', 'ADMIN']),
+  hodId: z.string().optional(),
+  role: z.enum(['EMPLOYEE', 'HOD', 'ADMIN']),
 })
 
 type EmployeeForm = z.infer<typeof employeeSchema>
 
-interface Manager {
+interface HOD {
   id: string
   firstName: string
   lastName: string
@@ -30,7 +30,7 @@ interface Manager {
   role?: string
 }
 
-export default function EmployeeForm({ managers }: { managers: Manager[] }) {
+export default function EmployeeForm({ hods }: { hods: HOD[] }) {
   const [isOpen, setIsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const {
@@ -143,23 +143,23 @@ export default function EmployeeForm({ managers }: { managers: Manager[] }) {
             </div>
 
             <div>
-              <label className="label">Reporting Manager</label>
-              <select {...register('managerId')} className="input-field">
-                <option value="">No Manager</option>
-                {managers.filter(m => m.role === 'MANAGER' || m.role === 'ADMIN').map((manager) => (
-                  <option key={manager.id} value={manager.id}>
-                    {manager.firstName} {manager.lastName} ({manager.employeeId}) - {manager.role}
+              <label className="label">Reporting HOD</label>
+              <select {...register('hodId')} className="input-field">
+                <option value="">No HOD</option>
+                {hods.filter(h => h.role === 'HOD' || h.role === 'ADMIN').map((hod) => (
+                  <option key={hod.id} value={hod.id}>
+                    {hod.firstName} {hod.lastName} ({hod.employeeId}) - {hod.role}
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-gray-500">Select a manager to assign as reporting manager</p>
+              <p className="mt-1 text-xs text-gray-500">Select a HOD to assign as reporting HOD</p>
             </div>
 
             <div>
               <label className="label">Role</label>
               <select {...register('role')} className="input-field">
                 <option value="EMPLOYEE">Employee</option>
-                <option value="MANAGER">Manager</option>
+                <option value="HOD">HOD</option>
                 <option value="ADMIN">Admin</option>
               </select>
             </div>

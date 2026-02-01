@@ -5,24 +5,25 @@ import Layout from '@/components/Layout'
 import { findLeaveRequests } from '@/lib/db-helpers'
 import ApprovalsTable from '@/components/ApprovalsTable'
 
-export default async function ApprovalsPage() {
+export default async function HODApprovalsPage() {
   const session = await getServerSession(authOptions)
   
   if (!session) {
     redirect('/login')
   }
 
-  if (session.user.role !== 'MANAGER' && session.user.role !== 'ADMIN') {
+  if (session.user.role !== 'HOD' && session.user.role !== 'ADMIN') {
     redirect('/dashboard')
   }
 
+  // HOD can only approve employee leaves, Admin can approve HOD leaves
   const pendingLeaves = session.user.role === 'ADMIN'
     ? await findLeaveRequests({ status: 'PENDING' })
-    : await findLeaveRequests({ status: 'PENDING', managerId: session.user.id })
+    : await findLeaveRequests({ status: 'PENDING', hodId: session.user.id })
 
   const allLeavesData = session.user.role === 'ADMIN'
     ? await findLeaveRequests()
-    : await findLeaveRequests({ managerId: session.user.id })
+    : await findLeaveRequests({ hodId: session.user.id })
   
   const limitedLeaves = allLeavesData.slice(0, 50)
 

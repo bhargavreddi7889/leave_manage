@@ -15,10 +15,10 @@ export default async function EmployeesPage() {
 
   const employeesData = await queryMany(
     `SELECT u.*, 
-     m.first_name as manager_first_name, m.last_name as manager_last_name, m.employee_id as manager_employee_id,
+     h.first_name as hod_first_name, h.last_name as hod_last_name, h.employee_id as hod_employee_id,
      (SELECT COUNT(*) FROM leave_requests WHERE user_id = u.id) as leave_count
      FROM users u
-     LEFT JOIN users m ON u.manager_id = m.id
+     LEFT JOIN users h ON u.hod_id = h.id
      ORDER BY u.created_at DESC`
   )
 
@@ -31,34 +31,34 @@ export default async function EmployeesPage() {
     phone: emp.phone,
     department: emp.department,
     position: emp.position,
-    managerId: emp.manager_id,
+    hodId: emp.hod_id,
     role: emp.role,
     isActive: emp.is_active,
     createdAt: emp.created_at,
     updatedAt: emp.updated_at,
-    manager: emp.manager_first_name ? {
-      firstName: emp.manager_first_name,
-      lastName: emp.manager_last_name,
-      employeeId: emp.manager_employee_id,
+    hod: emp.hod_first_name ? {
+      firstName: emp.hod_first_name,
+      lastName: emp.hod_last_name,
+      employeeId: emp.hod_employee_id,
     } : null,
     _count: {
       leaveRequests: parseInt(emp.leave_count || '0'),
     },
   }))
 
-  const managers = await queryMany(
+  const hods = await queryMany(
     `SELECT id, first_name, last_name, employee_id, role
      FROM users 
-     WHERE role IN ('MANAGER', 'ADMIN')
+     WHERE role IN ('HOD', 'ADMIN')
      ORDER BY role DESC, first_name ASC`
   )
   
-  const mappedManagers = managers.map((m: any) => ({
-    id: m.id,
-    firstName: m.first_name,
-    lastName: m.last_name,
-    employeeId: m.employee_id,
-    role: m.role,
+  const mappedHods = hods.map((h: any) => ({
+    id: h.id,
+    firstName: h.first_name,
+    lastName: h.last_name,
+    employeeId: h.employee_id,
+    role: h.role,
   }))
 
   return (
@@ -71,9 +71,9 @@ export default async function EmployeesPage() {
           </div>
         </div>
 
-        <EmployeeForm managers={mappedManagers} />
+        <EmployeeForm hods={mappedHods} />
 
-        <EmployeesTable employees={employees} managers={mappedManagers} />
+        <EmployeesTable employees={employees} hods={mappedHods} />
       </div>
     </Layout>
   )

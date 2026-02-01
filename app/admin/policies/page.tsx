@@ -5,6 +5,7 @@ import Layout from '@/components/Layout'
 import { queryMany } from '@/lib/db'
 import PoliciesTable from '@/components/PoliciesTable'
 import LeaveTypeForm from '@/components/LeaveTypeForm'
+import AttendancePolicyForm from '@/components/AttendancePolicyForm'
 
 export default async function PoliciesPage() {
   const session = await getServerSession(authOptions)
@@ -39,6 +40,8 @@ export default async function PoliciesPage() {
         <LeaveTypeForm />
 
         <PoliciesTable leaveTypes={leaveTypes} />
+
+        <AttendancePolicyForm />
       </div>
     </Layout>
   )

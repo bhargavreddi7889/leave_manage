@@ -1,5 +1,8 @@
+'use client'
+
 import { formatDate } from '@/lib/utils'
 import { Calendar, Clock, CheckCircle, XCircle } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface Leave {
   id: string
@@ -14,6 +17,8 @@ interface Leave {
 }
 
 export default function RecentLeaves({ leaves }: { leaves: Leave[] }) {
+  const router = useRouter()
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'APPROVED':
@@ -46,7 +51,8 @@ export default function RecentLeaves({ leaves }: { leaves: Leave[] }) {
           {leaves.map((leave) => (
             <div
               key={leave.id}
-              className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md transition-all duration-300 cursor-pointer group"
+              onClick={() => router.push(`/employee/leaves?id=${leave.id}`)}
+              className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md hover:-translate-y-0.5 hover:scale-[1.01] transition-all duration-300 cursor-pointer group active:scale-95"
             >
               <div className="flex items-center space-x-4">
                 {getStatusIcon(leave.status)}

@@ -7,14 +7,14 @@ import { findLeaveRequests, findActiveLeaveTypes, findUserById } from '@/lib/db-
 import LeaveApplicationForm from '@/components/LeaveApplicationForm'
 import LeavesTable from '@/components/LeavesTable'
 
-export default async function ManagerLeavesPage() {
+export default async function HODLeavesPage() {
   const session = await getServerSession(authOptions)
   
   if (!session) {
     redirect('/login')
   }
 
-  if (session.user.role !== 'MANAGER') {
+  if (session.user.role !== 'HOD') {
     redirect('/dashboard')
   }
 
@@ -33,9 +33,9 @@ export default async function ManagerLeavesPage() {
     isActive: lt.isActive,
   }))
 
-  // Check if user has a manager assigned
+  // Check if HOD has an Admin assigned (for HOD leave approval)
   const user = await findUserById(session.user.id)
-  const hasManager = !!user?.managerId
+  const hasHod = !!user?.hodId // HOD's manager is Admin
 
   return (
     <Layout>
@@ -45,7 +45,7 @@ export default async function ManagerLeavesPage() {
           <p className="mt-2 text-gray-600">Apply for leave and track your requests</p>
         </div>
 
-        {!hasManager && (
+        {!hasHod && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -55,14 +55,14 @@ export default async function ManagerLeavesPage() {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-yellow-700">
-                  <strong>Notice:</strong> You cannot apply for leave until a reporting manager is assigned. Please contact your administrator.
+                  <strong>Notice:</strong> You cannot apply for leave until an Admin is assigned as your reporting manager. Please contact your administrator.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        <LeaveApplicationForm leaveTypes={leaveTypes} balances={leaveBalances} hasManager={hasManager} />
+        <LeaveApplicationForm leaveTypes={leaveTypes} balances={leaveBalances} hasManager={hasHod} />
 
         <LeavesTable leaves={leaves} />
       </div>

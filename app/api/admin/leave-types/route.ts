@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { query } from '@/lib/db'
+import { createAuditLog } from '@/lib/audit-log'
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,7 +32,26 @@ export async function POST(req: NextRequest) {
       [name, type, parseInt(maxDays), carryForward || false]
     )
 
-    return NextResponse.json(result.rows[0], { status: 201 })
+    const newLeaveType = result.rows[0]
+
+    // Create audit log
+    await createAuditLog({
+      actionType: 'LEAVE_TYPE_CREATE',
+      entityType: 'LEAVE_TYPE',
+      entityId: newLeaveType.id,
+      userId: session.user.id,
+      oldValues: undefined,
+      newValues: {
+        name,
+        type,
+        maxDays: parseInt(maxDays),
+        carryForward: carryForward || false,
+      },
+      reason: 'Leave type created',
+      req,
+    })
+
+    return NextResponse.json(newLeaveType, { status: 201 })
   } catch (error: any) {
     console.error('Error creating leave type:', error)
     if (error.code === '23505') { // PostgreSQL unique violation

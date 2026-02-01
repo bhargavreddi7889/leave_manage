@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
-import { query } from '@/lib/db'
+import { query, queryOne } from '@/lib/db'
+import { createAuditLog } from '@/lib/audit-log'
 
 export async function PUT(
   req: NextRequest,
@@ -20,6 +21,19 @@ export async function PUT(
     const { id } = params
     const body = await req.json()
     const { name, maxDays, carryForward, isActive } = body
+
+    // Get existing leave type for audit
+    const existingLeaveType = await queryOne(
+      `SELECT * FROM leave_types WHERE id = $1`,
+      [id]
+    )
+
+    if (!existingLeaveType) {
+      return NextResponse.json(
+        { error: 'Leave type not found' },
+        { status: 404 }
+      )
+    }
 
     // Build update query dynamically
     const updates: string[] = []
@@ -61,6 +75,29 @@ export async function PUT(
     const result = await query(sql, updateParams)
 
     const row = result.rows[0]
+
+    // Create audit log
+    await createAuditLog({
+      actionType: 'LEAVE_TYPE_UPDATE',
+      entityType: 'LEAVE_TYPE',
+      entityId: id,
+      userId: session.user.id,
+      oldValues: {
+        name: existingLeaveType.name,
+        maxDays: existingLeaveType.max_days,
+        carryForward: existingLeaveType.carry_forward,
+        isActive: existingLeaveType.is_active,
+      },
+      newValues: {
+        name: name !== undefined ? name : existingLeaveType.name,
+        maxDays: maxDays !== undefined ? parseInt(maxDays) : existingLeaveType.max_days,
+        carryForward: carryForward !== undefined ? carryForward : existingLeaveType.carry_forward,
+        isActive: isActive !== undefined ? isActive : existingLeaveType.is_active,
+      },
+      reason: 'Leave type updated',
+      req,
+    })
+
     return NextResponse.json({
       id: row.id,
       name: row.name,
@@ -102,9 +139,22 @@ export async function DELETE(
 
     const { id } = params
 
+    // Get existing leave type for audit
+    const existingLeaveType = await queryOne(
+      `SELECT * FROM leave_types WHERE id = $1 AND deleted_at IS NULL`,
+      [id]
+    )
+
+    if (!existingLeaveType) {
+      return NextResponse.json(
+        { error: 'Leave type not found' },
+        { status: 404 }
+      )
+    }
+
     // Check if there are any leave requests using this leave type
     const leaveRequestsCheck = await query(
-      'SELECT COUNT(*) as count FROM leave_requests WHERE leave_type_id = $1',
+      'SELECT COUNT(*) as count FROM leave_requests WHERE leave_type_id = $1 AND deleted_at IS NULL',
       [id]
     )
 
@@ -115,7 +165,28 @@ export async function DELETE(
       )
     }
 
-    await query('DELETE FROM leave_types WHERE id = $1', [id])
+    // Soft delete - set deleted_at timestamp
+    await query(
+      `UPDATE leave_types SET deleted_at = NOW() WHERE id = $1`,
+      [id]
+    )
+
+    // Create audit log
+    await createAuditLog({
+      actionType: 'LEAVE_TYPE_DELETE',
+      entityType: 'LEAVE_TYPE',
+      entityId: id,
+      userId: session.user.id,
+      oldValues: {
+        name: existingLeaveType.name,
+        type: existingLeaveType.type,
+        maxDays: existingLeaveType.max_days,
+        carryForward: existingLeaveType.carry_forward,
+      },
+      newValues: { deletedAt: new Date().toISOString() },
+      reason: 'Leave type deleted (soft delete)',
+      req,
+    })
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
