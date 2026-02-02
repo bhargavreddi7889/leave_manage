@@ -9,6 +9,7 @@ export interface User {
   firstName: string
   lastName: string
   employeeId: string
+  mobile: string | null
   phone: string | null
   department: string | null
   position: string | null

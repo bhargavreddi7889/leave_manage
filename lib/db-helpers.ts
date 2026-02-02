@@ -22,6 +22,7 @@ function mapUserRow(row: any): User {
     firstName: row.first_name,
     lastName: row.last_name,
     employeeId: row.employee_id,
+    mobile: row.mobile || null,
     phone: row.phone,
     department: row.department,
     position: row.position,
