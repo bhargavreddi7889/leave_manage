@@ -10,7 +10,8 @@ import {
   Settings, 
   BarChart3,
   Calendar,
-  User
+  User,
+  Key
 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
 
@@ -44,6 +45,7 @@ export default function Sidebar() {
       { href: '/admin/attendance', label: 'Attendance', icon: Clock },
       { href: '/admin/approvals', label: 'Leaves', icon: FileText },
       { href: '/admin/policies', label: 'Policies', icon: Settings },
+      { href: '/admin/otp-management', label: 'OTP Management', icon: Key },
       { href: '/admin/my-attendance', label: 'My Attendance', icon: Calendar }
     )
   }

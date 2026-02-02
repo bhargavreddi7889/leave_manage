@@ -16,6 +16,7 @@
     "db:migrate-audit-logs": "tsx scripts/migrate-audit-logs.ts",
     "db:fix-attendance-columns": "tsx scripts/fix-attendance-columns.ts",
     "db:add-attendance-columns": "tsx scripts/add-attendance-columns.ts",
+    "db:add-mobile-otp": "tsx scripts/add-mobile-and-otp.ts",
     "attendance:auto-fill": "tsx scripts/auto-fill-leave-attendance.ts",
     "attendance:mark-missed-checkouts": "tsx scripts/mark-missed-checkouts.ts"
   },

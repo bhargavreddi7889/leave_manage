@@ -8,10 +8,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
-import { LogIn, Lock, Mail } from 'lucide-react'
+import { LogIn, Lock, Mail, Eye, EyeOff, Smartphone } from 'lucide-react'
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  identifier: z.string().min(1, 'Email or mobile number is required'),
   password: z.string().min(1, 'Password is required'),
 })
 
@@ -20,6 +20,7 @@ type LoginForm = z.infer<typeof loginSchema>
 export default function LoginPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const {
     register,
     handleSubmit,
@@ -32,13 +33,13 @@ export default function LoginPage() {
     setIsLoading(true)
     try {
       const result = await signIn('credentials', {
-        email: data.email,
+        identifier: data.identifier,
         password: data.password,
         redirect: false,
       })
 
       if (result?.error) {
-        toast.error('Invalid email or password')
+        toast.error('Invalid credentials or account is inactive')
       } else if (result?.ok) {
         toast.success('Login successful!')
         // Wait a moment for cookie to be set, then redirect
@@ -77,19 +78,19 @@ export default function LoginPage() {
         <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div>
-              <label htmlFor="email" className="label">
-                <Mail className="w-4 h-4 inline mr-2 text-indigo-600" />
-                Email Address
+              <label htmlFor="identifier" className="label">
+                <Smartphone className="w-4 h-4 inline mr-2 text-indigo-600" />
+                Email or Mobile Number
               </label>
               <input
-                id="email"
-                type="email"
-                {...register('email')}
+                id="identifier"
+                type="text"
+                {...register('identifier')}
                 className="input-field"
-                placeholder="Enter your email"
+                placeholder="Enter email or mobile number"
               />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              {errors.identifier && (
+                <p className="mt-1 text-sm text-red-600">{errors.identifier.message}</p>
               )}
             </div>
             <div>
@@ -97,16 +98,30 @@ export default function LoginPage() {
                 <Lock className="w-4 h-4 inline mr-2 text-indigo-600" />
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                {...register('password')}
-                className="input-field"
-                placeholder="Enter your password"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  {...register('password')}
+                  className="input-field pr-10"
+                  placeholder="Enter your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
               {errors.password && (
                 <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
               )}
+            </div>
+            <div className="flex items-center justify-end">
+              <Link href="/forgot-password" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700">
+                Forgot password?
+              </Link>
             </div>
             <button
               type="submit"
@@ -119,10 +134,7 @@ export default function LoginPage() {
           </form>
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link href="/signup" className="font-semibold text-indigo-600 hover:text-indigo-700">
-                Sign up
-              </Link>
+              Only administrators can create accounts
             </p>
           </div>
         </div>

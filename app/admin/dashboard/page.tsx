@@ -91,7 +91,7 @@ export default function AdminDashboardPage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         {/* Attendance Control Toggle - Top Priority */}
         <div className="mb-2">
           <AttendanceControlToggle />
@@ -103,7 +103,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* 2. Needs Attention & 3. Leave Snapshot - Side by Side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 w-full">
           <div className="min-w-0">
             <NeedsAttention data={data.needsAttention} />
           </div>
@@ -113,11 +113,11 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* 4. Recent Activity & 5. Admin Personal Attendance & 6. Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 w-full">
           <div className="lg:col-span-2 min-w-0">
             <RecentActivity activities={data.recentActivity} />
           </div>
-          <div className="space-y-6 min-w-0">
+          <div className="space-y-4 md:space-y-6 min-w-0">
             <AdminPersonalAttendance attendance={data.adminAttendance} />
             <QuickActions />
           </div>

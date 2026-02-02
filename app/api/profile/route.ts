@@ -18,7 +18,7 @@ export async function PUT(req: NextRequest) {
       `UPDATE users 
        SET first_name = $1, last_name = $2, phone = $3, department = $4, position = $5, updated_at = NOW()
        WHERE id = $6
-       RETURNING id, first_name, last_name, email, phone, department, position`,
+       RETURNING id, first_name, last_name, email, mobile, phone, department, position`,
       [firstName, lastName, phone || null, department || null, position || null, session.user.id]
     )
     
@@ -28,6 +28,7 @@ export async function PUT(req: NextRequest) {
       firstName: row.first_name,
       lastName: row.last_name,
       email: row.email,
+      mobile: row.mobile,
       phone: row.phone,
       department: row.department,
       position: row.position,

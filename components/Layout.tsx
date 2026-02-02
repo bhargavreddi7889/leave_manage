@@ -12,10 +12,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     >
       <div className="min-h-screen bg-gray-50 flex">
         <Sidebar />
-        <div className="flex-1 lg:ml-64 flex flex-col min-w-0">
+        <div className="flex-1 lg:ml-64 flex flex-col min-w-0 w-full">
           <TopBar />
-          <main className="flex-1 mt-16 p-6 lg:p-8 overflow-y-auto smooth-scroll">
-            <div className="max-w-full mx-auto">
+          <main className="flex-1 mt-16 p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto smooth-scroll">
+            <div className="max-w-full mx-auto w-full">
               {children}
             </div>
           </main>

@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
-import { User, Mail, Phone, Briefcase, Building, Save, Lock, Eye, EyeOff } from 'lucide-react'
+import { User, Mail, Phone, Briefcase, Building, Save, Lock, Eye, EyeOff, Smartphone } from 'lucide-react'
 
 const profileSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
@@ -32,6 +32,7 @@ interface User {
   firstName: string
   lastName: string
   email: string
+  mobile: string | null
   employeeId: string
   phone: string | null
   department: string | null
@@ -136,15 +137,15 @@ export default function ProfileForm({ user }: { user: User }) {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
       <div className="lg:col-span-2">
-        <div className="card">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+        <div className="card-hover">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center">
             <span className="w-1 h-6 bg-gradient-to-b from-indigo-600 to-purple-600 rounded-full mr-3"></span>
             Personal Information
           </h2>
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form className="space-y-4 md:space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div>
                 <label htmlFor="firstName" className="label">
                   <User className="w-4 h-4 inline mr-2 text-indigo-600" />
@@ -193,9 +194,24 @@ export default function ProfileForm({ user }: { user: User }) {
             </div>
 
             <div>
+              <label htmlFor="mobile" className="label">
+                <Smartphone className="w-4 h-4 inline mr-2 text-indigo-600" />
+                Mobile Number
+              </label>
+              <input
+                id="mobile"
+                type="tel"
+                value={user.mobile || 'Not set'}
+                disabled
+                className="input-field bg-gray-50 cursor-not-allowed"
+              />
+              <p className="mt-1 text-xs text-gray-500">Used for login and password reset. Contact admin to update.</p>
+            </div>
+
+            <div>
               <label htmlFor="phone" className="label">
                 <Phone className="w-4 h-4 inline mr-2 text-indigo-600" />
-                Phone Number
+                Phone Number (Optional)
               </label>
               <input
                 id="phone"
@@ -209,7 +225,7 @@ export default function ProfileForm({ user }: { user: User }) {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div>
                 <label htmlFor="department" className="label">
                   <Building className="w-4 h-4 inline mr-2 text-indigo-600" />
@@ -256,8 +272,8 @@ export default function ProfileForm({ user }: { user: User }) {
         </div>
       </div>
 
-      <div className="space-y-6">
-        <div className="card">
+      <div className="space-y-4 md:space-y-6">
+        <div className="card-hover">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Account Details</h3>
           <div className="space-y-4">
             <div>
@@ -281,12 +297,12 @@ export default function ProfileForm({ user }: { user: User }) {
           </div>
         </div>
 
-        <div className="card">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+        <div className="card-hover">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center">
             <span className="w-1 h-6 bg-gradient-to-b from-indigo-600 to-purple-600 rounded-full mr-3"></span>
             Change Password
           </h2>
-          <form className="space-y-6" onSubmit={handlePasswordSubmit(onPasswordSubmit)}>
+          <form className="space-y-4 md:space-y-6" onSubmit={handlePasswordSubmit(onPasswordSubmit)}>
             <div>
               <label htmlFor="currentPassword" className="label">
                 <Lock className="w-4 h-4 inline mr-2 text-indigo-600" />

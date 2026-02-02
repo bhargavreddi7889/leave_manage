@@ -25,6 +25,7 @@ export default async function EmployeesPage() {
   const employees = employeesData.map((emp: any) => ({
     id: emp.id,
     email: emp.email,
+    mobile: emp.mobile,
     firstName: emp.first_name,
     lastName: emp.last_name,
     employeeId: emp.employee_id,

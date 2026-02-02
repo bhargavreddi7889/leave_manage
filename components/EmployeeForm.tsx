@@ -5,11 +5,14 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
-import { Plus, User } from 'lucide-react'
+import { Plus, User, Eye, EyeOff, Phone, Smartphone } from 'lucide-react'
 
 const employeeSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
+  mobile: z.string()
+    .min(10, 'Mobile number must be at least 10 digits')
+    .max(15, 'Mobile number must not exceed 15 digits')
+    .regex(/^[0-9+\-\s()]+$/, 'Invalid mobile number format'),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   employeeId: z.string().min(1, 'Employee ID is required'),
@@ -57,7 +60,7 @@ export default function EmployeeForm({ hods }: { hods: HOD[] }) {
       const result = await response.json()
 
       if (response.ok) {
-        toast.success('Employee created successfully!')
+        toast.success('Employee created successfully! They can use "Forgot Password" to set their password.')
         reset()
         setIsOpen(false)
         window.location.reload()
@@ -104,19 +107,34 @@ export default function EmployeeForm({ hods }: { hods: HOD[] }) {
             </div>
 
             <div>
-              <label className="label">Email</label>
-              <input type="email" {...register('email')} className="input-field" />
+              <label className="label">
+                <Smartphone className="w-4 h-4 inline mr-2 text-indigo-600" />
+                Mobile Number <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                {...register('mobile')}
+                className="input-field"
+                placeholder="+1234567890"
+              />
+              {errors.mobile && (
+                <p className="mt-1 text-sm text-red-600">{errors.mobile.message}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">Required for login and OTP</p>
+            </div>
+
+            <div>
+              <label className="label">Email (Optional)</label>
+              <input type="email" {...register('email')} className="input-field" placeholder="user@example.com" />
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
               )}
             </div>
 
-            <div>
-              <label className="label">Password</label>
-              <input type="password" {...register('password')} className="input-field" />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-              )}
+            <div className="md:col-span-2 bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+              <p className="text-sm text-blue-700">
+                <strong>Password Setup:</strong> New employees will use the "Forgot Password" feature to set their password for first-time login. They'll receive an OTP from the admin.
+              </p>
             </div>
 
             <div>

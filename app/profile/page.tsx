@@ -23,6 +23,7 @@ export default async function ProfilePage() {
     firstName: userData.firstName,
     lastName: userData.lastName,
     email: userData.email,
+    mobile: userData.mobile,
     employeeId: userData.employeeId,
     phone: userData.phone,
     department: userData.department,
@@ -33,10 +34,10 @@ export default async function ProfilePage() {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl p-8 text-white shadow-2xl">
-          <h1 className="text-4xl font-bold mb-2">My Profile</h1>
-          <p className="text-indigo-100">View and manage your profile information</p>
+      <div className="space-y-4 md:space-y-6">
+        <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 text-white shadow-2xl">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2">My Profile</h1>
+          <p className="text-sm md:text-base text-indigo-100">View and manage your profile information</p>
         </div>
 
         <ProfileForm user={user} />

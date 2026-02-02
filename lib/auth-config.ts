@@ -1,6 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { getUserByEmail, verifyPassword } from "@/lib/auth";
+import { getUserByEmailOrMobile, verifyPassword } from "@/lib/auth";
 import { UserRole } from "@/types/database";
 
 export const authOptions: NextAuthOptions = {
@@ -8,20 +8,23 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        identifier: { label: "Email or Mobile", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.identifier || !credentials?.password) {
           return null;
         }
 
-        const user = await getUserByEmail(credentials.email);
+        // Get user by email or mobile
+        const user = await getUserByEmailOrMobile(credentials.identifier);
 
+        // Check if user exists and is active
         if (!user || !user.isActive) {
           return null;
         }
 
+        // Verify password
         const isValid = await verifyPassword(
           credentials.password,
           user.password
@@ -34,6 +37,7 @@ export const authOptions: NextAuthOptions = {
         return {
           id: user.id,
           email: user.email,
+          mobile: user.mobile,
           name: `${user.firstName} ${user.lastName}`,
           role: user.role,
           employeeId: user.employeeId,

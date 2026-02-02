@@ -21,7 +21,19 @@ export async function PUT(
     const routeParams = params instanceof Promise ? await params : params
     const { id } = routeParams
     const body = await req.json()
-    const { role, hodId, isActive, department, position, phone } = body
+    const { 
+      firstName, 
+      lastName, 
+      employeeId, 
+      email, 
+      mobile, 
+      phone, 
+      department, 
+      position, 
+      role, 
+      hodId, 
+      isActive 
+    } = body
 
     // Get existing employee for audit
     const existingEmployee = await queryOne(
@@ -44,10 +56,92 @@ export async function PUT(
       )
     }
 
+    // Validate mobile uniqueness if mobile is being updated
+    if (mobile !== undefined && mobile !== null && mobile !== '') {
+      const existingMobile = await queryOne(
+        'SELECT id FROM users WHERE mobile = $1 AND id != $2',
+        [mobile, id]
+      )
+      if (existingMobile) {
+        return NextResponse.json(
+          { error: 'Mobile number already exists' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Validate email uniqueness if email is being updated
+    if (email !== undefined && email !== null && email !== '') {
+      const existingEmail = await queryOne(
+        'SELECT id FROM users WHERE email = $1 AND id != $2',
+        [email, id]
+      )
+      if (existingEmail) {
+        return NextResponse.json(
+          { error: 'Email already exists' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Validate employee ID uniqueness if employeeId is being updated
+    if (employeeId !== undefined && employeeId !== null && employeeId !== '') {
+      const existingEmployeeId = await queryOne(
+        'SELECT id FROM users WHERE employee_id = $1 AND id != $2',
+        [employeeId, id]
+      )
+      if (existingEmployeeId) {
+        return NextResponse.json(
+          { error: 'Employee ID already exists' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Build update query dynamically
     const updates: string[] = []
     const queryParams: any[] = []
     let paramCount = 1
+
+    if (firstName !== undefined) {
+      updates.push(`first_name = $${paramCount++}`)
+      queryParams.push(firstName)
+    }
+
+    if (lastName !== undefined) {
+      updates.push(`last_name = $${paramCount++}`)
+      queryParams.push(lastName)
+    }
+
+    if (employeeId !== undefined) {
+      updates.push(`employee_id = $${paramCount++}`)
+      queryParams.push(employeeId)
+    }
+
+    if (email !== undefined) {
+      updates.push(`email = $${paramCount++}`)
+      queryParams.push(email || null)
+    }
+
+    if (mobile !== undefined) {
+      updates.push(`mobile = $${paramCount++}`)
+      queryParams.push(mobile || null)
+    }
+
+    if (phone !== undefined) {
+      updates.push(`phone = $${paramCount++}`)
+      queryParams.push(phone || null)
+    }
+
+    if (department !== undefined) {
+      updates.push(`department = $${paramCount++}`)
+      queryParams.push(department || null)
+    }
+
+    if (position !== undefined) {
+      updates.push(`position = $${paramCount++}`)
+      queryParams.push(position || null)
+    }
 
     if (role !== undefined) {
       if (!['EMPLOYEE', 'HOD', 'ADMIN'].includes(role)) {
@@ -81,21 +175,6 @@ export async function PUT(
       queryParams.push(isActive)
     }
 
-    if (department !== undefined) {
-      updates.push(`department = $${paramCount++}`)
-      queryParams.push(department || null)
-    }
-
-    if (position !== undefined) {
-      updates.push(`position = $${paramCount++}`)
-      queryParams.push(position || null)
-    }
-
-    if (phone !== undefined) {
-      updates.push(`phone = $${paramCount++}`)
-      queryParams.push(phone || null)
-    }
-
     if (updates.length === 0) {
       return NextResponse.json(
         { error: 'No fields to update' },
@@ -119,20 +198,30 @@ export async function PUT(
       entityId: id,
       userId: session.user.id,
       oldValues: {
+        firstName: existingEmployee.first_name,
+        lastName: existingEmployee.last_name,
+        employeeId: existingEmployee.employee_id,
+        email: existingEmployee.email,
+        mobile: existingEmployee.mobile,
+        phone: existingEmployee.phone,
+        department: existingEmployee.department,
+        position: existingEmployee.position,
         role: existingEmployee.role,
         hodId: existingEmployee.hod_id,
         isActive: existingEmployee.is_active,
-        department: existingEmployee.department,
-        position: existingEmployee.position,
-        phone: existingEmployee.phone,
       },
       newValues: {
+        firstName: firstName !== undefined ? firstName : existingEmployee.first_name,
+        lastName: lastName !== undefined ? lastName : existingEmployee.last_name,
+        employeeId: employeeId !== undefined ? employeeId : existingEmployee.employee_id,
+        email: email !== undefined ? (email || null) : existingEmployee.email,
+        mobile: mobile !== undefined ? (mobile || null) : existingEmployee.mobile,
+        phone: phone !== undefined ? (phone || null) : existingEmployee.phone,
+        department: department !== undefined ? department : existingEmployee.department,
+        position: position !== undefined ? position : existingEmployee.position,
         role: role !== undefined ? role : existingEmployee.role,
         hodId: hodId !== undefined ? (hodId === '' ? null : hodId) : existingEmployee.hod_id,
         isActive: isActive !== undefined ? isActive : existingEmployee.is_active,
-        department: department !== undefined ? department : existingEmployee.department,
-        position: position !== undefined ? position : existingEmployee.position,
-        phone: phone !== undefined ? phone : existingEmployee.phone,
       },
       reason: 'Employee updated',
       req,
@@ -141,6 +230,7 @@ export async function PUT(
     return NextResponse.json({
       id: row.id,
       email: row.email,
+      mobile: row.mobile,
       firstName: row.first_name,
       lastName: row.last_name,
       employeeId: row.employee_id,

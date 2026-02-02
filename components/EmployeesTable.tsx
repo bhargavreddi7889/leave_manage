@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { User, Mail, Phone, Building, Briefcase, Trash2, Edit, Save, X } from 'lucide-react'
+import { User, Mail, Phone, Building, Briefcase, Trash2, Edit, Save, X, Smartphone } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 interface Employee {
   id: string
-  email: string
+  email: string | null
+  mobile: string | null
   firstName: string
   lastName: string
   employeeId: string
@@ -43,7 +44,19 @@ export default function EmployeesTable({
 }) {
   const [deleting, setDeleting] = useState<string | null>(null)
   const [editing, setEditing] = useState<string | null>(null)
-  const [editData, setEditData] = useState<{ role?: string; hodId?: string; isActive?: boolean }>({})
+  const [editData, setEditData] = useState<{ 
+    firstName?: string
+    lastName?: string
+    employeeId?: string
+    email?: string
+    mobile?: string
+    phone?: string
+    department?: string
+    position?: string
+    role?: string
+    hodId?: string
+    isActive?: boolean
+  }>({})
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this employee?')) {
@@ -73,6 +86,14 @@ export default function EmployeesTable({
   const handleEdit = (employee: Employee) => {
     setEditing(employee.id)
     setEditData({
+      firstName: employee.firstName,
+      lastName: employee.lastName,
+      employeeId: employee.employeeId,
+      email: employee.email || '',
+      mobile: employee.mobile || '',
+      phone: employee.phone || '',
+      department: employee.department || '',
+      position: employee.position || '',
       role: employee.role,
       // Admin users should never have a HOD assigned
       hodId: employee.role === 'ADMIN' ? '' : (employee.hodId || ''),
@@ -132,7 +153,7 @@ export default function EmployeesTable({
     <div className="card">
       <h2 className="text-xl font-semibold text-gray-900 mb-4">All Employees</h2>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: editing ? '1200px' : 'auto' }}>
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -165,42 +186,141 @@ export default function EmployeesTable({
             {employees.map((employee) => (
               <tr key={employee.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
-                      <User className="w-5 h-5 text-primary-600" />
-                    </div>
-                    <div className="ml-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {employee.firstName} {employee.lastName}
+                  {editing === employee.id ? (
+                    <div className="space-y-2">
+                      <div>
+                        <input
+                          type="text"
+                          value={editData.firstName || ''}
+                          onChange={(e) => setEditData({ ...editData, firstName: e.target.value })}
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+                          placeholder="First Name"
+                        />
                       </div>
-                      <div className="text-sm text-gray-500">ID: {employee.employeeId}</div>
+                      <div>
+                        <input
+                          type="text"
+                          value={editData.lastName || ''}
+                          onChange={(e) => setEditData({ ...editData, lastName: e.target.value })}
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+                          placeholder="Last Name"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          value={editData.employeeId || ''}
+                          onChange={(e) => setEditData({ ...editData, employeeId: e.target.value })}
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+                          placeholder="Employee ID"
+                        />
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900 flex items-center space-x-1">
-                    <Mail className="w-4 h-4 text-gray-400" />
-                    <span>{employee.email}</span>
-                  </div>
-                  {employee.phone && (
-                    <div className="text-sm text-gray-500 flex items-center space-x-1 mt-1">
-                      <Phone className="w-4 h-4 text-gray-400" />
-                      <span>{employee.phone}</span>
+                  ) : (
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                        <User className="w-5 h-5 text-primary-600" />
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {employee.firstName} {employee.lastName}
+                        </div>
+                        <div className="text-sm text-gray-500">ID: {employee.employeeId}</div>
+                      </div>
                     </div>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {employee.department && (
-                    <div className="text-sm text-gray-900 flex items-center space-x-1">
-                      <Building className="w-4 h-4 text-gray-400" />
-                      <span>{employee.department}</span>
+                  {editing === employee.id ? (
+                    <div className="space-y-2">
+                      <div>
+                        <input
+                          type="email"
+                          value={editData.email || ''}
+                          onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+                          placeholder="Email (optional)"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="tel"
+                          value={editData.mobile || ''}
+                          onChange={(e) => setEditData({ ...editData, mobile: e.target.value })}
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+                          placeholder="Mobile Number"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="tel"
+                          value={editData.phone || ''}
+                          onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+                          placeholder="Phone (optional)"
+                        />
+                      </div>
                     </div>
+                  ) : (
+                    <>
+                      {employee.email && (
+                        <div className="text-sm text-gray-900 flex items-center space-x-1">
+                          <Mail className="w-4 h-4 text-gray-400" />
+                          <span>{employee.email}</span>
+                        </div>
+                      )}
+                      {employee.mobile && (
+                        <div className="text-sm text-gray-900 flex items-center space-x-1 mt-1">
+                          <Smartphone className="w-4 h-4 text-gray-400" />
+                          <span>{employee.mobile}</span>
+                        </div>
+                      )}
+                      {employee.phone && (
+                        <div className="text-sm text-gray-500 flex items-center space-x-1 mt-1">
+                          <Phone className="w-4 h-4 text-gray-400" />
+                          <span>{employee.phone}</span>
+                        </div>
+                      )}
+                    </>
                   )}
-                  {employee.position && (
-                    <div className="text-sm text-gray-500 flex items-center space-x-1 mt-1">
-                      <Briefcase className="w-4 h-4 text-gray-400" />
-                      <span>{employee.position}</span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {editing === employee.id ? (
+                    <div className="space-y-2">
+                      <div>
+                        <input
+                          type="text"
+                          value={editData.department || ''}
+                          onChange={(e) => setEditData({ ...editData, department: e.target.value })}
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+                          placeholder="Department"
+                        />
+                      </div>
+                      <div>
+                        <input
+                          type="text"
+                          value={editData.position || ''}
+                          onChange={(e) => setEditData({ ...editData, position: e.target.value })}
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full"
+                          placeholder="Position"
+                        />
+                      </div>
                     </div>
+                  ) : (
+                    <>
+                      {employee.department && (
+                        <div className="text-sm text-gray-900 flex items-center space-x-1">
+                          <Building className="w-4 h-4 text-gray-400" />
+                          <span>{employee.department}</span>
+                        </div>
+                      )}
+                      {employee.position && (
+                        <div className="text-sm text-gray-500 flex items-center space-x-1 mt-1">
+                          <Briefcase className="w-4 h-4 text-gray-400" />
+                          <span>{employee.position}</span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
