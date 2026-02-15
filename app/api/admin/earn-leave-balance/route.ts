@@ -114,7 +114,7 @@ export async function PUT(req: NextRequest) {
     // Create audit log
     await createAuditLog({
       actionType: 'EARN_LEAVE_BALANCE_UPDATE',
-      entityType: 'USER',
+      entityType: 'EMPLOYEE',
       entityId: userId,
       userId: session.user.id,
       oldValues: { oldEarnLeaveBalance: oldBalance },

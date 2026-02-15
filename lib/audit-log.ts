@@ -13,6 +13,7 @@ export type AuditActionType =
   | 'LEAVE_TYPE_UPDATE'
   | 'LEAVE_TYPE_DELETE'
   | 'ATTENDANCE_CONTROL_TOGGLE'
+  | 'EARN_LEAVE_BALANCE_UPDATE'
 
 export type AuditEntityType = 
   | 'ATTENDANCE'
@@ -21,6 +22,7 @@ export type AuditEntityType =
   | 'EMPLOYEE'
   | 'LEAVE_TYPE'
   | 'ATTENDANCE_CONTROL'
+  | 'USER'
 
 interface AuditLogParams {
   actionType: AuditActionType
