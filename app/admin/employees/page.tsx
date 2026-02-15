@@ -35,6 +35,7 @@ export default async function EmployeesPage() {
     hodId: emp.hod_id,
     role: emp.role,
     isActive: emp.is_active,
+    oldEarnLeaveBalance: parseFloat(emp.old_earn_leave_balance || '0'),
     createdAt: emp.created_at,
     updatedAt: emp.updated_at,
     hod: emp.hod_first_name ? {

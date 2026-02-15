@@ -17,8 +17,10 @@
     "db:fix-attendance-columns": "tsx scripts/fix-attendance-columns.ts",
     "db:add-attendance-columns": "tsx scripts/add-attendance-columns.ts",
     "db:add-mobile-otp": "tsx scripts/add-mobile-and-otp.ts",
+    "db:add-old-earn-leave-balance": "tsx scripts/add-old-earn-leave-balance.ts",
     "attendance:auto-fill": "tsx scripts/auto-fill-leave-attendance.ts",
-    "attendance:mark-missed-checkouts": "tsx scripts/mark-missed-checkouts.ts"
+    "attendance:mark-missed-checkouts": "tsx scripts/mark-missed-checkouts.ts",
+    "earn-leave:calculate": "tsx scripts/calculate-earn-leave.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",

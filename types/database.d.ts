@@ -16,6 +16,7 @@ export interface User {
   hodId: string | null
   role: UserRole
   isActive: boolean
+  oldEarnLeaveBalance?: number
   createdAt: Date
   updatedAt: Date
 }

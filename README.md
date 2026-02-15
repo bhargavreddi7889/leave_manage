@@ -53,11 +53,14 @@ A comprehensive web-based leave management system built with Next.js 14, Postgre
    DATABASE_URL="postgresql://user:password@host:port/database?sslmode=require&pgbouncer=true"
    NEXTAUTH_URL="http://localhost:3000"
    NEXTAUTH_SECRET="generate-a-secure-random-secret-key-here"
+   CRON_SECRET="generate-a-secure-random-secret-key-for-cron-jobs"
    ```
    
    **Important Security Notes:**
    - Never commit the `.env` file to version control
    - Generate a secure random string for `NEXTAUTH_SECRET` (use: `openssl rand -base64 32`)
+   - Generate a **different** secure random string for `CRON_SECRET` (use: `openssl rand -base64 32`)
+   - `CRON_SECRET` is required for securing automated cron job endpoints (attendance auto-fill, Earn Leave calculation)
    - For Supabase, use the connection pooler URL with `pgbouncer=true`
    - For local PostgreSQL, remove `sslmode=require&pgbouncer=true`
 
@@ -339,7 +342,9 @@ npm run attendance:auto-fill
 - Employee cannot check-in on leave day
 - Dashboard shows Leave status automatically
 
-### Setting Up Auto-Fill Cron Job
+### Setting Up Cron Jobs
+
+#### Auto-Fill Attendance Cron Job
 Add to your cron scheduler (crontab or system scheduler):
 ```bash
 # Run daily at 1 AM
@@ -352,7 +357,22 @@ curl -X POST https://your-domain.com/api/attendance/auto-fill \
   -H "Authorization: Bearer YOUR_CRON_SECRET"
 ```
 
-Set `CRON_SECRET` in your `.env` file for API endpoint authentication.
+#### Earn Leave Calculation Cron Job
+Calculate and update Earn Leave balances based on attendance (recommended: monthly):
+```bash
+# Run on the first day of every month at 2 AM
+0 2 1 * * cd /path/to/project && npm run earn-leave:calculate
+```
+
+Or use the API endpoint with authentication:
+```bash
+curl -X POST https://your-domain.com/api/earn-leave/calculate \
+  -H "Authorization: Bearer YOUR_CRON_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"year": 2024}'
+```
+
+**Security Note:** Both cron endpoints are protected by `CRON_SECRET`. Set `CRON_SECRET` in your `.env` file for API endpoint authentication. The secret should be a strong, randomly generated string (use: `openssl rand -base64 32`).
 
 ## Future Enhancements
 
