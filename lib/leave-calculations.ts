@@ -53,53 +53,78 @@ export async function getLeaveBalance(userId: string, year: number = new Date().
   )
 
   const leaveTypes = await queryMany(
-    `SELECT * FROM leave_types WHERE is_active = true`
+    `SELECT * FROM leave_types WHERE is_active = true AND deleted_at IS NULL ORDER BY name`
   )
 
-  // Get old Earn Leave balance for the user (for Earn Leave calculation)
+  // Get old Earn Leave balance for the user (carried forward from previous years)
   const user = await queryOne(
     `SELECT old_earn_leave_balance FROM users WHERE id = $1`,
     [userId]
   )
   const oldEarnLeaveBalance = parseFloat(user?.old_earn_leave_balance || '0')
 
+  // Deduplicate: only keep the first EARN_LEAVE type encountered
+  const seenEarnLeave = { seen: false }
+  const deduplicatedTypes = leaveTypes.filter((lt: any) => {
+    if (lt.type === 'EARN_LEAVE') {
+      if (seenEarnLeave.seen) return false
+      seenEarnLeave.seen = true
+    }
+    return true
+  })
+
   // Ensure all leave types have a balance entry
   const balanceMap = new Map(balances.map((b: any) => [b.leave_type_id, b]))
-  
+
   // Calculate Earn Leave balance dynamically from attendance
-  // This needs to be done separately since it's async
-  let earnLeaveBalance = oldEarnLeaveBalance // Default to old balance
-  const earnLeaveType = leaveTypes.find((lt: any) => lt.type === 'EARN_LEAVE')
+  let earnLeaveBalance = oldEarnLeaveBalance
+  let earnLeaveCurrentYearEarned = 0
+  const earnLeaveType = deduplicatedTypes.find((lt: any) => lt.type === 'EARN_LEAVE')
   if (earnLeaveType) {
     const dutyDays = await calculateDutyDays(userId, year)
-    const earnedLeave = await calculateEarnedLeave(dutyDays)
-    earnLeaveBalance = oldEarnLeaveBalance + earnedLeave
+    earnLeaveCurrentYearEarned = await calculateEarnedLeave(dutyDays)
+    earnLeaveBalance = oldEarnLeaveBalance + earnLeaveCurrentYearEarned
+
+    // Persist the calculated balance to the DB so the leave API uses current value
+    await query(
+      `INSERT INTO leave_balances (user_id, leave_type_id, balance, year)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (user_id, leave_type_id, year)
+       DO UPDATE SET balance = EXCLUDED.balance, updated_at = NOW()`,
+      [userId, earnLeaveType.id, earnLeaveBalance, year]
+    )
   }
-  
-  return leaveTypes.map((lt: any) => {
+
+  return deduplicatedTypes.map((lt: any) => {
     const balance = balanceMap.get(lt.id)
     const maxDays = lt.max_days || lt.maxDays
-    
-    // For Earn Leave: Use calculated balance from attendance
-    // Earn Leave should start at 0 (or old balance) and only increase when 20 duty days are completed
+
     if (lt.type === 'EARN_LEAVE') {
+      // maxDays for display = old carried-forward balance + current year cap (18)
+      // This way the bar reflects how much of the total possible has been earned
+      const displayMax = oldEarnLeaveBalance + 18
       return {
         leaveType: {
           id: lt.id,
           name: lt.name,
           type: lt.type,
-          maxDays: maxDays,
+          maxDays: displayMax,
           carryForward: lt.carry_forward || lt.carryForward,
           isActive: lt.is_active || lt.isActive,
           createdAt: lt.created_at || lt.createdAt,
           updatedAt: lt.updated_at || lt.updatedAt,
         },
-        balance: earnLeaveBalance, // Calculated from attendance + old balance
-        maxDays: maxDays,
+        balance: earnLeaveBalance,
+        maxDays: displayMax,
+        // Extra metadata for UI
+        oldBalance: oldEarnLeaveBalance,
+        currentYearEarned: earnLeaveCurrentYearEarned,
+        yearlyEarnCap: 18,
       }
     }
-    
-    // For other leave types, use maxDays as default if no balance exists
+
+    // For other leave types, cap displayed balance at maxDays (no negative, no overflow)
+    const storedBalance = balance ? parseFloat(balance.balance) : maxDays
     return {
       leaveType: {
         id: lt.id,
@@ -111,7 +136,7 @@ export async function getLeaveBalance(userId: string, year: number = new Date().
         createdAt: lt.created_at || lt.createdAt,
         updatedAt: lt.updated_at || lt.updatedAt,
       },
-      balance: balance ? parseFloat(balance.balance) : maxDays,
+      balance: storedBalance,
       maxDays: maxDays,
     }
   })

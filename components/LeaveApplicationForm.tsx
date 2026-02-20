@@ -72,6 +72,11 @@ export default function LeaveApplicationForm({
       return
     }
 
+    if (selectedBalance !== undefined && selectedBalance.balance <= 0) {
+      toast.error('You have no balance remaining for this leave type.')
+      return
+    }
+
     if (selectedBalance && days > selectedBalance.balance) {
       toast.error(`Insufficient leave balance. Available: ${selectedBalance.balance} days`)
       return
@@ -130,9 +135,15 @@ export default function LeaveApplicationForm({
                 <option value="">Select leave type</option>
                 {leaveTypes.map((type) => {
                   const balance = balances.find(b => b.leaveType.id === type.id)
+                  const available = balance?.balance ?? 0
+                  const isExhausted = available <= 0
                   return (
-                    <option key={type.id} value={type.id}>
-                      {type.name} {balance && `(${balance.balance} days available)`}
+                    <option key={type.id} value={type.id} disabled={isExhausted}>
+                      {type.name} {balance !== undefined
+                        ? isExhausted
+                          ? '(No balance)'
+                          : `(${available} days available)`
+                        : ''}
                     </option>
                   )
                 })}
@@ -144,9 +155,11 @@ export default function LeaveApplicationForm({
 
             <div>
               <label className="label">Available Balance</label>
-              <div className="input-field bg-gray-50">
-                {selectedBalance ? (
-                  <span className="text-gray-700">{selectedBalance.balance} days</span>
+              <div className={`input-field ${selectedBalance !== undefined && selectedBalance.balance <= 0 ? 'bg-red-50 border-red-300' : 'bg-gray-50'}`}>
+                {selectedBalance !== undefined ? (
+                  <span className={selectedBalance.balance <= 0 ? 'text-red-600 font-semibold' : 'text-gray-700'}>
+                    {selectedBalance.balance <= 0 ? '0 days — No balance' : `${selectedBalance.balance} days`}
+                  </span>
                 ) : (
                   <span className="text-gray-400">Select leave type</span>
                 )}
@@ -222,8 +235,8 @@ export default function LeaveApplicationForm({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="btn-primary disabled:opacity-50"
+              disabled={isSubmitting || (selectedBalance !== undefined && selectedBalance.balance <= 0)}
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Submitting...' : 'Submit Request'}
             </button>

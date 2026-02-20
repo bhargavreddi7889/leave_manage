@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { query, queryOne } from '@/lib/db'
 import { calculateDays } from '@/lib/utils'
-import { updateLeaveBalance, initializeLeaveBalances } from '@/lib/leave-calculations'
+import { updateLeaveBalance, initializeLeaveBalances, getLeaveBalance } from '@/lib/leave-calculations'
 import { findLeaveBalance, findLeaveTypeById, findLeaveRequests, findUserById } from '@/lib/db-helpers'
 
 export async function POST(req: NextRequest) {
@@ -48,7 +48,6 @@ export async function POST(req: NextRequest) {
 
     // Check leave balance
     const currentYear = new Date().getFullYear()
-    const balance = await findLeaveBalance(session.user.id, leaveTypeId, currentYear)
     const leaveType = await findLeaveTypeById(leaveTypeId)
 
     if (!leaveType) {
@@ -58,18 +57,36 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const availableBalance = balance?.balance ?? leaveType.maxDays
+    let availableBalance: number
+
+    if (leaveType.type === 'EARN_LEAVE') {
+      // For EARN_LEAVE, use dynamically calculated balance (old balance + current year earned)
+      // getLeaveBalance also persists the value so subsequent DB reads are accurate
+      const allBalances = await getLeaveBalance(session.user.id, currentYear)
+      const earnLeaveBalance = allBalances.find((b: any) => b.leaveType.type === 'EARN_LEAVE')
+      availableBalance = earnLeaveBalance?.balance ?? 0
+    } else {
+      const balance = await findLeaveBalance(session.user.id, leaveTypeId, currentYear)
+      availableBalance = balance?.balance ?? leaveType.maxDays
+
+      // Initialize balance if not exists
+      if (!balance) {
+        await initializeLeaveBalances(session.user.id, currentYear)
+      }
+    }
+
+    if (availableBalance <= 0) {
+      return NextResponse.json(
+        { error: 'You have no balance remaining for this leave type.' },
+        { status: 400 }
+      )
+    }
 
     if (calculatedDays > availableBalance) {
       return NextResponse.json(
         { error: `Insufficient leave balance. Available: ${availableBalance} days` },
         { status: 400 }
       )
-    }
-
-    // Initialize balance if not exists
-    if (!balance) {
-      await initializeLeaveBalances(session.user.id, currentYear)
     }
 
     // Create leave request
