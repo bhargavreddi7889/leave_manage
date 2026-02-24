@@ -133,20 +133,6 @@ export default function AttendanceCheckInOut() {
     return null
   }
 
-  if (!attendance.attendanceEnabled) {
-    return (
-      <div className="card bg-red-50 border-l-4 border-red-500">
-        <div className="flex items-center space-x-3">
-          <XCircle className="w-6 h-6 text-red-600" />
-          <div>
-            <h3 className="font-semibold text-red-900">Attendance System Disabled</h3>
-            <p className="text-sm text-red-700">Check-in/out is currently disabled. Please contact your administrator.</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   if (attendance.isOnLeave) {
     return (
       <div className="card bg-blue-50 border-l-4 border-blue-500">
@@ -199,13 +185,8 @@ export default function AttendanceCheckInOut() {
               <CheckCircle className="w-5 h-5" />
               <span className="font-medium">Checked In: {new Date(attendance.checkIn).toLocaleTimeString()}</span>
             </div>
-            {attendance.isLateEntry && (
-              <div className="flex items-center space-x-2 text-orange-600 text-sm">
-                <span className="px-2 py-1 bg-orange-100 rounded">⚠️ Late Entry</span>
-              </div>
-            )}
             {attendance.policy && (
-              <p className="text-xs text-gray-500">Office Start: {attendance.policy.officeStartTime}</p>
+              <p className="text-xs text-gray-500">Office Hours: {attendance.policy.officeStartTime} – {attendance.policy.officeEndTime}</p>
             )}
           </div>
         ) : attendance.canCheckIn ? (
@@ -219,37 +200,19 @@ export default function AttendanceCheckInOut() {
           </button>
         ) : (
           <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-600 text-center">
-              {attendance.policy ? (
-                <>Check-in available from {attendance.policy.officeStartTime} (1 hour before office start)</>
-              ) : (
-                <>Check-in not available at this time</>
-              )}
-            </p>
+            <p className="text-sm text-gray-600 text-center">Check-in available</p>
           </div>
         )}
 
         {attendance.checkIn && !attendance.checkOut && (
-          attendance.canCheckOut ? (
-            <button
-              onClick={handleCheckOut}
-              disabled={checkingOut}
-              className="w-full btn-secondary flex items-center justify-center space-x-2 disabled:opacity-50"
-            >
-              <XCircle className="w-5 h-5" />
-              <span>{checkingOut ? 'Checking Out...' : 'Check Out'}</span>
-            </button>
-          ) : (
-            <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-              <p className="text-sm text-gray-600 text-center">
-                {attendance.policy ? (
-                  <>Check-out available after office start time until {attendance.policy.officeEndTime} (2 hours after)</>
-                ) : (
-                  <>Check-out not available at this time</>
-                )}
-              </p>
-            </div>
-          )
+          <button
+            onClick={handleCheckOut}
+            disabled={checkingOut}
+            className="w-full btn-secondary flex items-center justify-center space-x-2 disabled:opacity-50"
+          >
+            <XCircle className="w-5 h-5" />
+            <span>{checkingOut ? 'Checking Out...' : 'Check Out'}</span>
+          </button>
         )}
 
         {attendance.checkOut && (
@@ -258,16 +221,8 @@ export default function AttendanceCheckInOut() {
               <XCircle className="w-5 h-5" />
               <span className="font-medium">Checked Out: {new Date(attendance.checkOut).toLocaleTimeString()}</span>
             </div>
-            {attendance.isEarlyExit && (
-              <div className="flex items-center space-x-2 text-orange-600 text-sm">
-                <span className="px-2 py-1 bg-orange-100 rounded">⚠️ Early Exit</span>
-              </div>
-            )}
             {attendance.workingHours !== null && attendance.workingHours !== undefined && (
-              <p className="text-xs text-gray-500">Working Hours: {attendance.workingHours.toFixed(2)} hrs</p>
-            )}
-            {attendance.policy && (
-              <p className="text-xs text-gray-500">Office End: {attendance.policy.officeEndTime}</p>
+              <p className="text-xs text-gray-500">Working Hours: {(attendance.workingHours as number).toFixed(2)} hrs</p>
             )}
           </div>
         )}

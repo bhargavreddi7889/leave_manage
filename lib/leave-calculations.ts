@@ -85,12 +85,21 @@ export async function getLeaveBalance(userId: string, year: number = new Date().
     earnLeaveCurrentYearEarned = await calculateEarnedLeave(dutyDays)
     earnLeaveBalance = oldEarnLeaveBalance + earnLeaveCurrentYearEarned
 
-    // Persist the calculated balance to the DB so the leave API uses current value
+    // Persist the calculated balance.
+    // Rule: only update when the new total (old balance + earned this year) is HIGHER
+    // than what's already stored — this prevents overwriting reductions from taken leaves.
+    // We use GREATEST so a manual reduction (leave taken) is never wiped out.
     await query(
       `INSERT INTO leave_balances (user_id, leave_type_id, balance, year)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (user_id, leave_type_id, year)
-       DO UPDATE SET balance = EXCLUDED.balance, updated_at = NOW()`,
+       DO UPDATE SET
+         balance = CASE
+           -- Only increase if newly calculated total is bigger than current stored value
+           WHEN EXCLUDED.balance > leave_balances.balance THEN EXCLUDED.balance
+           ELSE leave_balances.balance
+         END,
+         updated_at = NOW()`,
       [userId, earnLeaveType.id, earnLeaveBalance, year]
     )
   }

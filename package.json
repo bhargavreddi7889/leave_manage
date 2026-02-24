@@ -21,7 +21,9 @@
     "attendance:auto-fill": "tsx scripts/auto-fill-leave-attendance.ts",
     "attendance:mark-missed-checkouts": "tsx scripts/mark-missed-checkouts.ts",
     "earn-leave:calculate": "tsx scripts/calculate-earn-leave.ts",
-    "db:fix-duplicate-earn-leave": "tsx scripts/fix-duplicate-earn-leave.ts"
+    "db:fix-duplicate-earn-leave": "tsx scripts/fix-duplicate-earn-leave.ts",
+    "db:create-working-days": "tsx scripts/create-working-days.ts",
+    "calendar:init-year": "tsx scripts/init-working-days-year.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",

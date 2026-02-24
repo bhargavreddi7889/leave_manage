@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { query, queryOne } from '@/lib/db'
-import { getActiveAttendancePolicy, isLateEntry, isEarlyExit, calculateWorkingHours, determineAttendanceStatus } from '@/lib/attendance-policy'
+import { getActiveAttendancePolicy, calculateWorkingHours } from '@/lib/attendance-policy'
 import { createAuditLog } from '@/lib/audit-log'
 import { createNotification } from '@/lib/notifications'
 
@@ -86,39 +86,28 @@ export async function PUT(
       )
     }
 
-    // Recalculate working hours, late/early flags, and status if check-in/out times are updated
-    let finalIsLateEntry = attendance.is_late_entry
-    let finalIsEarlyExit = attendance.is_early_exit
+    // Recalculate working hours when times are updated
     let finalWorkingHours = attendance.working_hours
     let finalStatus = status !== undefined ? status : attendance.status
 
-    if (finalCheckIn) {
-      finalIsLateEntry = isLateEntry(finalCheckIn, policy)
-    }
-
     if (finalCheckOut && finalCheckIn) {
       finalWorkingHours = calculateWorkingHours(finalCheckIn, finalCheckOut)
-      
-      // Prevent negative working hours
+
       if (finalWorkingHours < 0) {
         return NextResponse.json(
           { error: 'Invalid time range: check-out must be after check-in' },
           { status: 400 }
         )
       }
-      
-      finalIsEarlyExit = isEarlyExit(finalCheckOut, policy)
-      
-      // Only auto-determine status if not manually set and both times exist
+
+      // If status not manually set, default to PRESENT
       if (status === undefined) {
-        finalStatus = determineAttendanceStatus(finalWorkingHours, policy)
+        finalStatus = 'PRESENT'
       }
     } else if (finalCheckIn && !finalCheckOut) {
-      // Only check-in, reset related fields
       finalWorkingHours = null
-      finalIsEarlyExit = false
       if (status === undefined) {
-        finalStatus = 'PRESENT' // Default to present if only checked in
+        finalStatus = 'PRESENT'
       }
     }
 
@@ -138,16 +127,12 @@ export async function PUT(
         checkOut: attendance.check_out,
         status: attendance.status,
         workingHours: attendance.working_hours,
-        isLateEntry: attendance.is_late_entry,
-        isEarlyExit: attendance.is_early_exit,
       },
       newValues: {
         checkIn: finalCheckIn,
         checkOut: finalCheckOut,
         status: finalStatus,
         workingHours: finalWorkingHours,
-        isLateEntry: finalIsLateEntry,
-        isEarlyExit: finalIsEarlyExit,
       },
       reason: overrideReason || (session.user.role === 'HOD' ? 'HOD correction' : 'Admin override'),
       req,
@@ -155,11 +140,16 @@ export async function PUT(
 
     // Also log to attendance_audit_log for backward compatibility
     if (session.user.role === 'ADMIN') {
-      await query(
-        `INSERT INTO attendance_audit_log (attendance_id, modified_by, old_status, new_status, reason, created_at)
-         VALUES ($1, $2, $3, $4, $5, NOW())`,
-        [id, session.user.id, attendance.status, finalStatus, overrideReason]
-      )
+      try {
+        await query(
+          `INSERT INTO attendance_audit_log (attendance_id, modified_by, old_status, new_status, reason, created_at)
+           VALUES ($1, $2, $3, $4, $5, NOW())`,
+          [id, session.user.id, attendance.status, finalStatus, overrideReason]
+        )
+      } catch (auditErr: any) {
+        // Non-fatal: audit log failure should not block the override
+        console.error('attendance_audit_log insert failed (non-fatal):', auditErr.message)
+      }
       updates.push(`marked_by = 'ADMIN'`)
     } else if (session.user.role === 'HOD') {
       updates.push(`marked_by = 'HOD'`)
@@ -178,15 +168,11 @@ export async function PUT(
     if (checkIn !== undefined) {
       updates.push(`check_in = $${paramCount++}`)
       queryParams.push(finalCheckIn)
-      updates.push(`is_late_entry = $${paramCount++}`)
-      queryParams.push(finalIsLateEntry)
     }
 
     if (checkOut !== undefined) {
       updates.push(`check_out = $${paramCount++}`)
       queryParams.push(finalCheckOut)
-      updates.push(`is_early_exit = $${paramCount++}`)
-      queryParams.push(finalIsEarlyExit)
     }
 
     // Update working hours if check-in or check-out changed
@@ -224,8 +210,6 @@ export async function PUT(
 
     return NextResponse.json({
       ...result.rows[0],
-      isLateEntry: finalIsLateEntry,
-      isEarlyExit: finalIsEarlyExit,
       workingHours: finalWorkingHours,
       status: finalStatus,
     }, { status: 200 })

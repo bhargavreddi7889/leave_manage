@@ -2,32 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { query, queryOne } from '@/lib/db'
-import { getActiveAttendancePolicy, isEarlyExit, calculateWorkingHours, determineAttendanceStatus } from '@/lib/attendance-policy'
-import { isAttendanceEnabled } from '@/lib/attendance-control'
+import { calculateWorkingHours } from '@/lib/attendance-policy'
 
-// POST - Check out
+// POST - Check out → records timestamp, calculates working hours (informational), keeps PRESENT
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
+
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    // Check if attendance is enabled
-    const attendanceEnabled = await isAttendanceEnabled()
-    if (!attendanceEnabled) {
-      return NextResponse.json(
-        { error: 'Attendance system is currently disabled. Please contact your administrator.' },
-        { status: 403 }
-      )
     }
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     const now = new Date()
 
-    // Check if checked in today
     const existing = await queryOne(
       `SELECT * FROM attendance WHERE user_id = $1 AND date = $2`,
       [session.user.id, today]
@@ -47,7 +36,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Validate check-out is after check-in
     const checkInTime = new Date(existing.check_in)
     if (now <= checkInTime) {
       return NextResponse.json(
@@ -56,60 +44,26 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Get attendance policy (with error handling)
-    let policy
-    let isEarly = false
-    let status = 'PRESENT'
     const workingHours = calculateWorkingHours(checkInTime, now)
-    
-    try {
-      policy = await getActiveAttendancePolicy()
-      
-      if (policy) {
-        isEarly = isEarlyExit(now, policy)
-        status = determineAttendanceStatus(workingHours, policy)
-      } else {
-        // Default status calculation if no policy
-        if (workingHours >= 7.0) {
-          status = 'PRESENT'
-        } else if (workingHours >= 4.0) {
-          status = 'HALF_DAY'
-        } else {
-          status = 'ABSENT'
-        }
-      }
-    } catch (error) {
-      console.error('Error getting attendance policy:', error)
-      // Use default calculations if policy fetch fails
-      if (workingHours >= 7.0) {
-        status = 'PRESENT'
-      } else if (workingHours >= 4.0) {
-        status = 'HALF_DAY'
-      } else {
-        status = 'ABSENT'
-      }
-    }
 
-    // Update attendance with check-out (only if marked by USER, not SYSTEM)
     const result = await query(
-      `UPDATE attendance 
-       SET check_out = $1, status = $2, is_early_exit = $3, working_hours = $4, updated_at = NOW()
-       WHERE user_id = $5 AND date = $6 AND (marked_by = 'USER' OR marked_by IS NULL)
+      `UPDATE attendance
+       SET check_out = $1, working_hours = $2, status = 'PRESENT', updated_at = NOW()
+       WHERE user_id = $3 AND date = $4 AND (marked_by = 'USER' OR marked_by IS NULL)
        RETURNING *`,
-      [now, status, isEarly, workingHours, session.user.id, today]
+      [now, workingHours, session.user.id, today]
     )
 
     if (result.rows.length === 0) {
       return NextResponse.json(
-        { error: 'Cannot check out. Attendance was marked by system (on leave).' },
+        { error: 'Cannot check out. Attendance was marked by system.' },
         { status: 400 }
       )
     }
 
-    return NextResponse.json({ 
-      ...result.rows[0], 
-      isEarlyExit: isEarly,
-      workingHours: workingHours 
+    return NextResponse.json({
+      ...result.rows[0],
+      workingHours,
     }, { status: 200 })
   } catch (error: any) {
     console.error('Error checking out:', error)
@@ -119,4 +73,3 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-

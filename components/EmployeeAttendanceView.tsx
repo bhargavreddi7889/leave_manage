@@ -134,20 +134,10 @@ export default function EmployeeAttendanceView({ userId }: { userId: string }) {
                       {formatDate(new Date(record.date))}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div>
-                        {record.checkIn ? new Date(record.checkIn).toLocaleTimeString() : '-'}
-                        {record.isLateEntry && (
-                          <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded">Late</span>
-                        )}
-                      </div>
+                      {record.checkIn ? new Date(record.checkIn).toLocaleTimeString() : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div>
-                        {record.checkOut ? new Date(record.checkOut).toLocaleTimeString() : '-'}
-                        {record.isEarlyExit && (
-                          <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded">Early</span>
-                        )}
-                      </div>
+                      {record.checkOut ? new Date(record.checkOut).toLocaleTimeString() : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {record.workingHours !== null && record.workingHours !== undefined

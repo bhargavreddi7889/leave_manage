@@ -96,6 +96,10 @@ export default function AdminAttendanceView({
   }, [selectedUserId, startDate, endDate])
 
   const handleSave = async (attendanceId: string) => {
+    if (!editData.overrideReason?.trim()) {
+      toast.error('Override reason / justification is required')
+      return
+    }
     try {
       const response = await fetch(`/api/attendance/${attendanceId}`, {
         method: 'PUT',
@@ -235,12 +239,7 @@ export default function AdminAttendanceView({
                           className="text-sm border border-gray-300 rounded px-2 py-1"
                         />
                       ) : (
-                        <div>
-                          {record.checkIn ? new Date(record.checkIn).toLocaleTimeString() : '-'}
-                          {record.isLateEntry && (
-                            <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded">Late</span>
-                          )}
-                        </div>
+                        record.checkIn ? new Date(record.checkIn).toLocaleTimeString() : '-'
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -252,12 +251,7 @@ export default function AdminAttendanceView({
                           className="text-sm border border-gray-300 rounded px-2 py-1"
                         />
                       ) : (
-                        <div>
-                          {record.checkOut ? new Date(record.checkOut).toLocaleTimeString() : '-'}
-                          {record.isEarlyExit && (
-                            <span className="ml-2 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded">Early</span>
-                          )}
-                        </div>
+                        record.checkOut ? new Date(record.checkOut).toLocaleTimeString() : '-'
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -274,8 +268,8 @@ export default function AdminAttendanceView({
                         >
                           <option value="PRESENT">Present</option>
                           <option value="ABSENT">Absent</option>
-                          <option value="HALF_DAY">Half Day</option>
                           <option value="ON_LEAVE">On Leave</option>
+                          <option value="MISSED_CHECKOUT">Missed Checkout</option>
                         </select>
                       ) : (
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(record.status)}`}>
@@ -298,31 +292,35 @@ export default function AdminAttendanceView({
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {editing === record.id ? (
-                        <div className="flex space-x-2">
+                        <div className="flex flex-col gap-1.5 min-w-[180px]">
                           <input
                             type="text"
                             value={editData.overrideReason || ''}
                             onChange={(e) => setEditData({ ...editData, overrideReason: e.target.value })}
-                            className="text-xs border border-gray-300 rounded px-2 py-1 w-32"
-                            placeholder="Override reason"
+                            className={`text-xs border rounded px-2 py-1 ${
+                              !editData.overrideReason?.trim()
+                                ? 'border-red-400 bg-red-50 placeholder-red-400'
+                                : 'border-gray-300'
+                            }`}
+                            placeholder="Reason (required) *"
                           />
-                          <button
-                            onClick={() => handleSave(record.id)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Save"
-                          >
-                            <Save className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditing(null)
-                              setEditData({})
-                            }}
-                            className="text-red-600 hover:text-red-900"
-                            title="Cancel"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleSave(record.id)}
+                              disabled={!editData.overrideReason?.trim()}
+                              className="text-green-600 hover:text-green-900 disabled:opacity-40 disabled:cursor-not-allowed"
+                              title="Save"
+                            >
+                              <Save className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => { setEditing(null); setEditData({}) }}
+                              className="text-red-600 hover:text-red-900"
+                              title="Cancel"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
                         </div>
                       ) : (
                         <button

@@ -6,9 +6,8 @@ import TodayAtGlance from '@/components/TodayAtGlance'
 import NeedsAttention from '@/components/NeedsAttention'
 import LeaveSnapshot from '@/components/LeaveSnapshot'
 import RecentActivity from '@/components/RecentActivity'
-import AdminPersonalAttendance from '@/components/AdminPersonalAttendance'
+import AttendanceCheckInOut from '@/components/AttendanceCheckInOut'
 import QuickActions from '@/components/QuickActions'
-import AttendanceControlToggle from '@/components/AttendanceControlToggle'
 
 interface DashboardData {
   todayAtGlance: {
@@ -30,7 +29,7 @@ interface DashboardData {
     rejected: number
   }
   recentActivity: any[]
-  adminAttendance: any
+  adminAttendance?: any
 }
 
 export default function AdminDashboardPage() {
@@ -92,11 +91,6 @@ export default function AdminDashboardPage() {
   return (
     <Layout>
       <div className="space-y-4 md:space-y-6">
-        {/* Attendance Control Toggle - Top Priority */}
-        <div className="mb-2">
-          <AttendanceControlToggle />
-        </div>
-
         {/* 1. Today at a Glance */}
         <div className="w-full">
           <TodayAtGlance data={data.todayAtGlance} />
@@ -118,7 +112,7 @@ export default function AdminDashboardPage() {
             <RecentActivity activities={data.recentActivity} />
           </div>
           <div className="space-y-4 md:space-y-6 min-w-0">
-            <AdminPersonalAttendance attendance={data.adminAttendance} />
+            <AttendanceCheckInOut />
             <QuickActions />
           </div>
         </div>

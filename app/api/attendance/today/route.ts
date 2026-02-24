@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-config'
 import { queryOne } from '@/lib/db'
 import { getActiveAttendancePolicy } from '@/lib/attendance-policy'
-import { isAttendanceEnabled } from '@/lib/attendance-control'
 
 // GET - Get today's attendance status
 export async function GET(req: NextRequest) {
@@ -14,8 +13,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if attendance is enabled
-    const attendanceEnabled = await isAttendanceEnabled()
+    const attendanceEnabled = true // Always enabled; working days controlled via calendar
     
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -52,53 +50,18 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // Get policy for late/early indicators and office hours
-    let policy = null
+    // canCheckIn: true if not yet checked in today
+    // canCheckOut: true if checked in but not yet checked out
+    // No time-window gates — late/early flags are purely informational
     let canCheckIn = !attendance ? true : !attendance.check_in
     let canCheckOut = attendance ? (!!attendance.check_in && !attendance.check_out) : false
-    
+
+    // Fetch policy only for informational display (late entry / early exit indicators)
+    let policy = null
     try {
       policy = await getActiveAttendancePolicy()
-      
-      if (policy) {
-        // Check if current time is within office hours for check-in
-        const now = new Date()
-        const [startHours, startMinutes] = policy.officeStartTime.split(':').map(Number)
-        const [endHours, endMinutes] = policy.officeEndTime.split(':').map(Number)
-        
-        const officeStart = new Date(now)
-        officeStart.setHours(startHours, startMinutes, 0, 0)
-        
-        const officeEnd = new Date(now)
-        officeEnd.setHours(endHours, endMinutes, 0, 0)
-        
-        // Allow check-in from 1 hour before office start to 2 hours after office end
-        const checkInStart = new Date(officeStart)
-        checkInStart.setHours(checkInStart.getHours() - 1)
-        
-        const checkInEnd = new Date(officeEnd)
-        checkInEnd.setHours(checkInEnd.getHours() + 2)
-        
-        // Only show check-in if within allowed window and not already checked in
-        if (canCheckIn) {
-          canCheckIn = now >= checkInStart && now <= checkInEnd
-        }
-        
-        // Only show check-out if after office start time and before 2 hours after office end
-        if (canCheckOut) {
-          const checkOutStart = new Date(officeStart)
-          const checkOutEnd = new Date(officeEnd)
-          checkOutEnd.setHours(checkOutEnd.getHours() + 2)
-          canCheckOut = now >= checkOutStart && now <= checkOutEnd
-        }
-      }
     } catch (error: any) {
       console.error('Error getting policy:', error)
-      // Continue with default behavior if policy fetch fails
-      // If policy table doesn't exist, allow check-in/out (graceful degradation)
-      if (!error.message?.includes('relation') && !error.message?.includes('does not exist')) {
-        // Only log if it's not a table missing error
-      }
     }
 
     if (!attendance) {

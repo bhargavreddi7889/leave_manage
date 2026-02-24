@@ -1,5 +1,5 @@
 import { queryOne } from './db'
-import { getActiveAttendancePolicy, determineAttendanceStatus, calculateWorkingHours } from './attendance-policy'
+import { getActiveAttendancePolicy, calculateWorkingHours } from './attendance-policy'
 
 /**
  * Handle edge case: Late entry + Early exit = Half Day
@@ -7,19 +7,10 @@ import { getActiveAttendancePolicy, determineAttendanceStatus, calculateWorkingH
 export async function handleLateEarlyEdgeCase(
   checkIn: Date,
   checkOut: Date,
-  policy: any
-): Promise<'PRESENT' | 'HALF_DAY' | 'ABSENT'> {
-  const workingHours = calculateWorkingHours(checkIn, checkOut)
-  
-  // If late entry AND early exit, check if it's still a full day
-  // Otherwise use normal calculation
-  if (workingHours >= policy.minHoursFullDay) {
-    return 'PRESENT'
-  } else if (workingHours >= policy.minHoursHalfDay) {
-    return 'HALF_DAY'
-  } else {
-    return 'ABSENT'
-  }
+  _policy: any
+): Promise<'PRESENT'> {
+  // Simplified: any check-in/check-out = PRESENT
+  return 'PRESENT'
 }
 
 /**

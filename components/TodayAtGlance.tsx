@@ -1,14 +1,14 @@
 'use client'
 
-import { Users, UserX, Calendar, Clock, AlertCircle } from 'lucide-react'
+import { Users, UserX, Calendar, AlertCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface TodayAtGlanceData {
   presentToday: number
   absentToday: number
   onLeaveToday: number
-  lateCheckIns: number
   missedCheckOuts: number
+  lateCheckIns?: number // kept for API compat, not displayed
 }
 
 export default function TodayAtGlance({ data }: { data: TodayAtGlanceData }) {
@@ -40,14 +40,6 @@ export default function TodayAtGlance({ data }: { data: TodayAtGlanceData }) {
       href: '/admin/attendance?status=ON_LEAVE',
     },
     {
-      label: 'Late Check-ins',
-      value: data.lateCheckIns,
-      icon: Clock,
-      color: 'bg-orange-500',
-      textColor: 'text-orange-700',
-      href: '/admin/attendance?late=true',
-    },
-    {
       label: 'Missed Check-outs',
       value: data.missedCheckOuts,
       icon: AlertCircle,
@@ -60,7 +52,7 @@ export default function TodayAtGlance({ data }: { data: TodayAtGlanceData }) {
   return (
     <div className="card w-full">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Today at a Glance</h2>
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 overflow-x-auto">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 overflow-x-auto">
         {cards.map((card) => {
           const Icon = card.icon
           return (

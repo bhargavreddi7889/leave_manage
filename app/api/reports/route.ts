@@ -14,12 +14,13 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url)
-    const format = searchParams.get('format') || 'excel'
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
+    const format     = searchParams.get('format') || 'excel'
+    const startDate  = searchParams.get('startDate')
+    const endDate    = searchParams.get('endDate')
+    const department = searchParams.get('department')
 
-    let sql = `SELECT lr.*, 
-      u.first_name as user_first_name, u.last_name as user_last_name, u.employee_id as user_employee_id, 
+    let sql = `SELECT lr.*,
+      u.first_name as user_first_name, u.last_name as user_last_name, u.employee_id as user_employee_id,
       u.email as user_email, u.department as user_department,
       lt.name as leave_type_name
       FROM leave_requests lr
@@ -35,6 +36,9 @@ export async function GET(req: NextRequest) {
     } else if (session.user.role === 'HOD') {
       sql += ` AND u.hod_id = $${paramCount++}`
       params.push(session.user.id)
+    } else if (session.user.role === 'ADMIN' && department) {
+      sql += ` AND u.department = $${paramCount++}`
+      params.push(department)
     }
 
     if (startDate) {
@@ -46,7 +50,7 @@ export async function GET(req: NextRequest) {
       params.push(new Date(endDate))
     }
 
-    sql += ` ORDER BY lr.created_at DESC`
+    sql += ` ORDER BY u.department, u.first_name, lr.created_at DESC`
 
     const rows = await queryMany(sql, params)
     

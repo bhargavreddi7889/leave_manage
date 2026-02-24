@@ -10,12 +10,6 @@ import { Clock, Save, Settings } from 'lucide-react'
 const policySchema = z.object({
   officeStartTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format. Use HH:mm'),
   officeEndTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Invalid time format. Use HH:mm'),
-  minHoursFullDay: z.number().min(0.1).max(24),
-  minHoursHalfDay: z.number().min(0.1).max(24),
-  gracePeriodMinutes: z.number().min(0).max(60),
-}).refine((data) => data.minHoursFullDay > data.minHoursHalfDay, {
-  message: 'Full day hours must be greater than half day hours',
-  path: ['minHoursFullDay'],
 })
 
 type PolicyForm = z.infer<typeof policySchema>
@@ -24,9 +18,6 @@ interface AttendancePolicy {
   id: string
   officeStartTime: string
   officeEndTime: string
-  minHoursFullDay: number
-  minHoursHalfDay: number
-  gracePeriodMinutes: number
   isActive: boolean
 }
 
@@ -42,32 +33,20 @@ export default function AttendancePolicyForm() {
     reset,
   } = useForm<PolicyForm>({
     resolver: zodResolver(policySchema),
-    defaultValues: {
-      officeStartTime: '10:00',
-      officeEndTime: '17:00',
-      minHoursFullDay: 7.0,
-      minHoursHalfDay: 4.0,
-      gracePeriodMinutes: 0,
-    },
+    defaultValues: { officeStartTime: '10:00', officeEndTime: '18:00' },
   })
 
-  useEffect(() => {
-    fetchPolicy()
-  }, [])
+  useEffect(() => { fetchPolicy() }, [])
 
   const fetchPolicy = async () => {
     try {
       const response = await fetch('/api/admin/attendance-policy')
       const data = await response.json()
-
       if (response.ok) {
         setPolicy(data)
         reset({
           officeStartTime: data.officeStartTime || '10:00',
-          officeEndTime: data.officeEndTime || '17:00',
-          minHoursFullDay: data.minHoursFullDay || 7.0,
-          minHoursHalfDay: data.minHoursHalfDay || 4.0,
-          gracePeriodMinutes: data.gracePeriodMinutes || 0,
+          officeEndTime: data.officeEndTime || '18:00',
         })
       }
     } catch (error) {
@@ -85,20 +64,14 @@ export default function AttendancePolicyForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-
       const result = await response.json()
-
       if (response.ok) {
         toast.success('Attendance policy updated successfully!')
         setPolicy(result)
-        // Reload page to reflect changes
-        setTimeout(() => {
-          window.location.reload()
-        }, 500)
       } else {
         toast.error(result.error || 'Failed to update policy')
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred. Please try again.')
     } finally {
       setIsSubmitting(false)
@@ -106,11 +79,7 @@ export default function AttendancePolicyForm() {
   }
 
   if (loading) {
-    return (
-      <div className="card">
-        <div className="text-center py-4 text-gray-500">Loading policy...</div>
-      </div>
-    )
+    return <div className="card"><div className="text-center py-4 text-gray-500">Loading policy...</div></div>
   }
 
   return (
@@ -122,8 +91,8 @@ export default function AttendancePolicyForm() {
 
       <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded">
         <p className="text-sm text-blue-700">
-          <strong>Note:</strong> Changes to attendance policy will affect all future attendance calculations. 
-          Historical data will not be modified unless explicitly reprocessed.
+          <strong>Rule:</strong> Any employee who checks in within the office hours is marked{' '}
+          <strong>PRESENT</strong> automatically — no minimum hours or grace period required.
         </p>
       </div>
 
@@ -134,15 +103,11 @@ export default function AttendancePolicyForm() {
               <Clock className="w-4 h-4 mr-2 text-indigo-600" />
               Office Start Time
             </label>
-            <input
-              type="time"
-              {...register('officeStartTime')}
-              className="input-field"
-            />
+            <input type="time" {...register('officeStartTime')} className="input-field" />
             {errors.officeStartTime && (
               <p className="mt-1 text-sm text-red-600">{errors.officeStartTime.message}</p>
             )}
-            <p className="mt-1 text-xs text-gray-500">Check-ins after this time will be marked as late</p>
+            <p className="mt-1 text-xs text-gray-500">Start of the check-in window for the day</p>
           </div>
 
           <div>
@@ -150,65 +115,11 @@ export default function AttendancePolicyForm() {
               <Clock className="w-4 h-4 mr-2 text-indigo-600" />
               Office End Time
             </label>
-            <input
-              type="time"
-              {...register('officeEndTime')}
-              className="input-field"
-            />
+            <input type="time" {...register('officeEndTime')} className="input-field" />
             {errors.officeEndTime && (
               <p className="mt-1 text-sm text-red-600">{errors.officeEndTime.message}</p>
             )}
-            <p className="mt-1 text-xs text-gray-500">Check-outs before this time will be marked as early</p>
-          </div>
-
-          <div>
-            <label className="label">Minimum Hours for Full Day</label>
-            <input
-              type="number"
-              step="0.1"
-              min="0.1"
-              max="24"
-              {...register('minHoursFullDay', { valueAsNumber: true })}
-              className="input-field"
-            />
-            {errors.minHoursFullDay && (
-              <p className="mt-1 text-sm text-red-600">{errors.minHoursFullDay.message}</p>
-            )}
-            <p className="mt-1 text-xs text-gray-500">Minimum working hours required for full day attendance</p>
-          </div>
-
-          <div>
-            <label className="label">Minimum Hours for Half Day</label>
-            <input
-              type="number"
-              step="0.1"
-              min="0.1"
-              max="24"
-              {...register('minHoursHalfDay', { valueAsNumber: true })}
-              className="input-field"
-            />
-            {errors.minHoursHalfDay && (
-              <p className="mt-1 text-sm text-red-600">{errors.minHoursHalfDay.message}</p>
-            )}
-            <p className="mt-1 text-xs text-gray-500">Minimum working hours required for half day attendance</p>
-          </div>
-
-          <div className="md:col-span-2">
-            <label className="label">Grace Period (Minutes)</label>
-            <input
-              type="number"
-              min="0"
-              max="60"
-              {...register('gracePeriodMinutes', { valueAsNumber: true })}
-              className="input-field"
-            />
-            {errors.gracePeriodMinutes && (
-              <p className="mt-1 text-sm text-red-600">{errors.gracePeriodMinutes.message}</p>
-            )}
-            <p className="mt-1 text-xs text-gray-500">
-              Grace period for late entry and early exit. For example, if set to 15 minutes, 
-              check-ins up to 15 minutes after start time won't be marked as late.
-            </p>
+            <p className="mt-1 text-xs text-gray-500">End of the check-out window for the day</p>
           </div>
         </div>
 
@@ -227,16 +138,12 @@ export default function AttendancePolicyForm() {
       {policy && (
         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Current Policy</h3>
-          <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+          <div className="flex gap-6 text-sm text-gray-600">
             <div>Start Time: <span className="font-medium">{policy.officeStartTime}</span></div>
             <div>End Time: <span className="font-medium">{policy.officeEndTime}</span></div>
-            <div>Full Day Hours: <span className="font-medium">{policy.minHoursFullDay} hrs</span></div>
-            <div>Half Day Hours: <span className="font-medium">{policy.minHoursHalfDay} hrs</span></div>
-            <div>Grace Period: <span className="font-medium">{policy.gracePeriodMinutes} mins</span></div>
           </div>
         </div>
       )}
     </div>
   )
 }
-

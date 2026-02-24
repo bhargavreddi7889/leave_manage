@@ -10,6 +10,7 @@ import {
   Settings, 
   BarChart3,
   Calendar,
+  CalendarDays,
   User,
   Key
 } from 'lucide-react'
@@ -45,6 +46,7 @@ export default function Sidebar() {
       { href: '/admin/attendance', label: 'Attendance', icon: Clock },
       { href: '/admin/approvals', label: 'Leaves', icon: FileText },
       { href: '/admin/policies', label: 'Policies', icon: Settings },
+      { href: '/admin/calendar', label: 'Work Calendar', icon: CalendarDays },
       { href: '/admin/otp-management', label: 'OTP Management', icon: Key },
       { href: '/admin/my-attendance', label: 'My Attendance', icon: Calendar }
     )
